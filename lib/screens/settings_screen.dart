@@ -43,7 +43,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           width: Get.width,
           child: Selectable(
             controller: controller,
-
             child: Column(
               children: [
                 SizedBox(height: Get.mediaQuery.padding.top + 16),
@@ -95,20 +94,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         return SettingsCard(
                           selectableKey: "${key}_$index",
                           onTap: () async {
-                            appHandler.exportAppOrder();
-                          },
-                          title: "Export App Order",
-                          body: "Export the order of your apps",
-                        );
-                      case 5:
-                        return SettingsCard(
-                          selectableKey: "${key}_$index",
-                          onTap: () async {
                             appHandler.importAppOrder();
                           },
                           title: "Import App Order",
                           body: "Import the order of your apps",
                         );
+                      case 5:
+                        return SettingsCard(
+                          selectableKey: "${key}_$index",
+                          onTap: () async {
+                            appHandler.exportAppOrder();
+                          },
+                          title: "Export App Order",
+                          body: "Export the order of your apps",
+                        );
+
                       default:
                         return SizedBox.shrink();
                     }
