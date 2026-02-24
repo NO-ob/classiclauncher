@@ -1,6 +1,7 @@
 import 'package:classiclauncher/handlers/app_grid_handler.dart';
 import 'package:classiclauncher/handlers/app_handler.dart';
 import 'package:classiclauncher/handlers/theme_handler.dart';
+import 'package:classiclauncher/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -64,10 +65,7 @@ class _AppDragOverlayState extends State<AppDragOverlay> {
 
       x += appGridPadding.left;
 
-      //int nearestRow =
-
-      print("finger is in column: $column ,  row: $row, locked $locked");
-
+      // Logger().log(location: "AppDragOverlay..build", message: "finger is in column: $column ,  row: $row, locked $locked");
       appGridHandler.appMoveCol = locked ? column : null;
       appGridHandler.appMoveRow = locked ? row : null;
 

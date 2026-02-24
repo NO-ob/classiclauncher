@@ -3,22 +3,17 @@ import 'dart:typed_data';
 
 import 'package:classiclauncher/handlers/app_handler.dart';
 import 'package:classiclauncher/handlers/config_handler.dart';
-import 'package:classiclauncher/models/theme/app_grid_theme.dart';
 import 'package:classiclauncher/models/theme/launcher_theme.dart';
-import 'package:classiclauncher/models/theme/page_indicator_theme.dart';
-import 'package:classiclauncher/models/theme/selector_theme.dart';
-import 'package:classiclauncher/widgets/page_indicator.dart';
+import 'package:classiclauncher/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
-class CardMeta {}
 
 class ThemeHandler extends GetxController {
   Rx<LauncherTheme> theme = Rx(LauncherTheme());
 
   @override
   void onInit() {
-    LauncherTheme launcherTheme = LauncherTheme();
+    super.onInit();
     //q10 theme
     /* theme.value = LauncherTheme().copyWith(
       pageIndicatorTheme: launcherTheme.pageIndicatorTheme.copyWith(
@@ -37,7 +32,6 @@ class ThemeHandler extends GetxController {
         cornerRadius: 12,
       ),
     );*/
-    super.onInit();
     loadThemeFromStorage();
   }
 
@@ -46,10 +40,9 @@ class ThemeHandler extends GetxController {
 
     try {
       LauncherTheme newTheme = LauncherTheme.fromJson(jsonDecode(themeString));
-
       theme.value = newTheme;
     } catch (e, stackTrace) {
-      print("Failed to laod stored theme $e, $stackTrace");
+      Logger().log(location: "ThemeHandler.loadThemeFromStorage", message: "Failed to load stored theme $e, $stackTrace", level: LogLevel.exception);
     }
   }
 
@@ -79,7 +72,7 @@ class ThemeHandler extends GetxController {
 
       Get.snackbar("Theme exported ( Ո‿Ո)", "saved to $fileName.json ...", backgroundColor: Colors.black54, colorText: Colors.white);
     } catch (e, stackTrace) {
-      print("Failed to export theme $e,$stackTrace");
+      Logger().log(location: "ThemeHandler.exportTheme", message: "Failed to export theme $e, $stackTrace", level: LogLevel.exception);
       Get.snackbar("Failed to export theme ૮(˶ㅠ︿ㅠ)ა", "$e", backgroundColor: Colors.black54, colorText: Colors.white);
     }
   }
@@ -104,7 +97,7 @@ class ThemeHandler extends GetxController {
 
       Get.snackbar("Theme imported ( Ո‿Ո)", "theme has been imported and stored", backgroundColor: Colors.black54, colorText: Colors.white);
     } catch (e, stackTrace) {
-      print("Failed to import theme $e,$stackTrace");
+      Logger().log(location: "ThemeHandler.importTheme", message: "Failed to import theme $e, $stackTrace", level: LogLevel.exception);
       Get.snackbar("Failed to import theme ૮(˶ㅠ︿ㅠ)ა", "$e", backgroundColor: Colors.black54, colorText: Colors.white);
     }
   }
@@ -117,7 +110,7 @@ class ThemeHandler extends GetxController {
 
       Get.snackbar("Theme cleared ( Ո‿Ո)", "theme has been reset to default", backgroundColor: Colors.black54, colorText: Colors.white);
     } catch (e, stackTrace) {
-      print("Failed to reset theme $e,$stackTrace");
+      Logger().log(location: "ThemeHandler.resetTheme", message: "Failed to reset theme $e, $stackTrace", level: LogLevel.exception);
       Get.snackbar("Failed to reset theme ૮(˶ㅠ︿ㅠ)ა", "$e", backgroundColor: Colors.black54, colorText: Colors.white);
     }
   }

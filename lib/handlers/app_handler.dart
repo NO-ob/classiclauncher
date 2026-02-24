@@ -5,6 +5,7 @@ import 'package:classiclauncher/handlers/config_handler.dart';
 import 'package:classiclauncher/models/app_info.dart';
 import 'package:classiclauncher/screens/settings_screen.dart';
 import 'package:classiclauncher/utils/constants.dart';
+import 'package:classiclauncher/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +14,8 @@ import 'package:get/get.dart';
 class AppHandler extends GetxController {
   static const MethodChannel methodChannel = MethodChannel('com.noaisu.classicLauncher/app');
   RxList<AppInfo> installedApps = RxList();
+  RxMap<String, Uint8List> appIcons = RxMap();
+  RxMap<String, Uint8List> customAppIcons = RxMap();
   RxList<String> appPositions = RxList();
   Rx<Uint8List?> wallpaper = Rx(null);
   Rx<AppInfo?> loliSnatcher = Rx(null);
@@ -20,16 +23,56 @@ class AppHandler extends GetxController {
   RxBool editingApps = false.obs;
   ConfigHandler configHandler = Get.find<ConfigHandler>();
 
-  Timer? _timer;
+  static const EventChannel eventChannel = EventChannel('com.noaisu.classicLauncher/appChange');
+  StreamSubscription? appChangeSubscription;
 
   @override
   void onInit() {
     super.onInit();
     getAppPositions();
     getAppList();
-    _timer = Timer.periodic(Duration(seconds: 30), (_) {
-      getAppList();
+
+    appChangeSubscription = eventChannel.receiveBroadcastStream().listen((appChange) async {
+      Logger().log(location: "AppHandler.onInit", message: "App changed $appChange");
+      if (appChange is! Map) {
+        return;
+      }
+
+      String? packageName = appChange["packageName"];
+      String? title = appChange["title"];
+      String? status = appChange["status"];
+
+      if (packageName == null || title == null) {
+        return;
+      }
+
+      switch (status) {
+        case "removed":
+          installedApps.removeWhere((app) => app.packageName == packageName);
+          appIcons.remove(packageName);
+          return;
+        case "added":
+          if (title == packageName) {
+            return getAppList();
+          }
+          installedApps.add(AppInfo(packageName: packageName, title: title));
+      }
+
+      Uint8List? appIcon = await getAppIcon(packageName);
+
+      if (appIcon == null) {
+        Logger().log(location: "AppHandler.onInit", message: "Failed to get app icon for $packageName");
+        return;
+      }
+
+      appIcons[packageName] = appIcon;
     });
+  }
+
+  @override
+  void onClose() {
+    appChangeSubscription?.cancel();
+    super.onClose();
   }
 
   Future<Uint8List> loadAssetBytes(String assetPath) async {
@@ -49,7 +92,7 @@ class AppHandler extends GetxController {
 
       appPositions.value = packagePositions;
     } catch (e, stackTrace) {
-      print("Failled to load app positions $e, $stackTrace");
+      Logger().log(location: "AppHandler.getAppPositions", message: "Failed to load app positions $e, $stackTrace", level: LogLevel.exception);
     }
   }
 
@@ -63,13 +106,7 @@ class AppHandler extends GetxController {
       AppInfo? loliSnatcherInfo;
       List<dynamic>? results = await methodChannel.invokeMethod<List<dynamic>>('getApps') ?? [];
 
-      Uint8List settingsIconBytes = await loadAssetBytes(iconSettingsApp);
-
-      apps["classiclauncher.internal.settings"] = AppInfo(
-        packageName: "classiclauncher.internal.settings",
-        title: "Launcher Settings",
-        icon: settingsIconBytes,
-      );
+      apps["classiclauncher.internal.settings"] = AppInfo(packageName: "classiclauncher.internal.settings", title: "Launcher Settings");
 
       for (dynamic appInfo in results) {
         if (appInfo is! Map) {
@@ -78,13 +115,12 @@ class AppHandler extends GetxController {
 
         String? packageName = appInfo["packageName"];
         String? title = appInfo["title"];
-        Uint8List? icon = appInfo["icon"];
 
-        if (packageName == null || title == null || icon == null) {
+        if (packageName == null || title == null) {
           continue;
         }
 
-        AppInfo currentApp = AppInfo(packageName: packageName, title: title, icon: icon);
+        AppInfo currentApp = AppInfo(packageName: packageName, title: title);
 
         apps[packageName] = currentApp;
 
@@ -111,7 +147,26 @@ class AppHandler extends GetxController {
         installedApps.value = newAppList;
       }
     } on PlatformException catch (e, stackTrace) {
-      print("Failed to get apps $e, $stackTrace");
+      Logger().log(location: "AppHandler.getAppList", message: "Failed to get apps $e, $stackTrace", level: LogLevel.exception);
+    }
+
+    getAppIcons();
+  }
+
+  Future<void> getAppIcons() async {
+    for (AppInfo app in installedApps) {
+      if (appIcons.containsKey(app.packageName)) {
+        continue;
+      }
+
+      Uint8List? appIcon = await getAppIcon(app.packageName);
+
+      if (appIcon == null) {
+        Logger().log(location: "AppHandler.getAppIcons", message: "Failed to get app icon for $app");
+        continue;
+      }
+
+      appIcons[app.packageName] = appIcon;
     }
   }
 
@@ -124,7 +179,7 @@ class AppHandler extends GetxController {
     try {
       bool? result = await methodChannel.invokeMethod<bool>('launchApp', {"packageName": app.packageName});
     } on PlatformException catch (e, stackTrace) {
-      print("Failed to launch app $e, $stackTrace");
+      Logger().log(location: "AppHandler.launchApp", message: "Failed to launch app $e, $stackTrace", level: LogLevel.exception);
     }
   }
 
@@ -142,7 +197,7 @@ class AppHandler extends GetxController {
     try {
       bool? result = await methodChannel.invokeMethod<bool>('launchMail');
     } on PlatformException catch (e, stackTrace) {
-      print("Failed to launch SMS $e, $stackTrace");
+      Logger().log(location: "AppHandler.launchMail", message: "Failed to launch SMS $e, $stackTrace", level: LogLevel.exception);
     }
   }
 
@@ -150,7 +205,7 @@ class AppHandler extends GetxController {
     try {
       bool? result = await methodChannel.invokeMethod<bool>('launchCamera');
     } on PlatformException catch (e, stackTrace) {
-      print("Failed to launch Camera $e, $stackTrace");
+      Logger().log(location: "AppHandler.launchCamera", message: "Failed to launch Camera $e, $stackTrace", level: LogLevel.exception);
     }
   }
 
@@ -160,14 +215,9 @@ class AppHandler extends GetxController {
 
     int currentIndex = installedApps.indexOf(app);
 
-    if (currentIndex == appPosition) {
-      print("tried moving ${app.packageName} to same position $currentIndex");
-      return;
-    }
-
     newAppList.remove(app);
     newAppList.insert(appPosition, app);
-    print("move ${app.packageName} from $currentIndex to $appPosition");
+    Logger().log(location: "AppHandler.moveApp", message: "Move ${app.packageName} from $currentIndex to $appPosition");
 
     if (newAppList == installedApps) {
       return;
@@ -195,7 +245,7 @@ class AppHandler extends GetxController {
         'extPathOverride': extPathOverride,
       });
     } catch (e, stackTrace) {
-      print("Failed to write file $e, $stackTrace");
+      Logger().log(location: "AppHandler.writeFile", message: "Failed to write file $e, $stackTrace", level: LogLevel.exception);
     }
     return result;
   }
@@ -204,9 +254,9 @@ class AppHandler extends GetxController {
     String? result;
     try {
       result = await methodChannel.invokeMethod('getTempDirAccess');
-      print('Got saf path back $result');
+      Logger().log(location: "AppHandler.getSAFDirectoryAccess", message: "Got saf path back $result");
     } catch (e, stackTrace) {
-      print("Failed to get saf path $e, $stackTrace");
+      Logger().log(location: "AppHandler.getSAFDirectoryAccess", message: "Failed to get saf path $e, $stackTrace", level: LogLevel.exception);
     }
     return result;
   }
@@ -215,11 +265,24 @@ class AppHandler extends GetxController {
     Uint8List? result;
     try {
       result = await methodChannel.invokeMethod('getFileBytes', {'uri': contentUri});
-      print('Got file back');
+      Logger().log(location: "AppHandler.getSAFFile", message: "Got file back");
     } catch (e, stackTrace) {
-      print("Failed to get saf file $e, $stackTrace");
+      Logger().log(location: "AppHandler.getSAFFile", message: "Failed to get saf file $e, $stackTrace", level: LogLevel.exception);
     }
-    // File(result+"/test.txt").create(recursive: true);
+    return result;
+  }
+
+  Future<Uint8List?> getAppIcon(String packageName) async {
+    Uint8List? result;
+
+    try {
+      result = packageName == "classiclauncher.internal.settings"
+          ? await loadAssetBytes(iconSettingsApp)
+          : await methodChannel.invokeMethod('getAppIcon', {'packageName': packageName});
+    } catch (e, stackTrace) {
+      Logger().log(location: "AppHandler.getAppIcon", message: "Failed to find icon for $packageName $e, $stackTrace", level: LogLevel.exception);
+    }
+
     return result;
   }
 
@@ -227,11 +290,10 @@ class AppHandler extends GetxController {
     String result = '';
     try {
       result = await methodChannel.invokeMethod('getFileUri');
-      print('Got saf uri back: $result');
+      Logger().log(location: "AppHandler.getSAFUri", message: "Got saf uri back: $result");
     } catch (e, stackTrace) {
-      print("Failed to get saf uri $e, $stackTrace");
+      Logger().log(location: "AppHandler.getSAFUri", message: "Failed to get saf uri $e, $stackTrace", level: LogLevel.exception);
     }
-    // File(result+"/test.txt").create(recursive: true);
     return result;
   }
 
@@ -239,7 +301,7 @@ class AppHandler extends GetxController {
     try {
       await methodChannel.invokeMethod('openWallpaperPicker');
     } catch (e, stackTrace) {
-      print("Failed to set wallpaper $e, $stackTrace");
+      Logger().log(location: "AppHandler.openWallpaperPicker", message: "Failed to set wallpaper $e, $stackTrace", level: LogLevel.exception);
     }
   }
 
@@ -257,8 +319,16 @@ class AppHandler extends GetxController {
 
       Get.snackbar("App order exported ( Ո‿Ո)", "saved to $fileName.json ...", backgroundColor: Colors.black54, colorText: Colors.white);
     } catch (e, stackTrace) {
-      print("Failed to export app order $e,$stackTrace");
+      Logger().log(location: "AppHandler.exportAppOrder", message: "Failed to export app order $e, $stackTrace", level: LogLevel.exception);
       Get.snackbar("Failed to export app order ૮(˶ㅠ︿ㅠ)ა", "$e", backgroundColor: Colors.black54, colorText: Colors.white);
+    }
+  }
+
+  Future<void> uninstallApp(AppInfo app) async {
+    try {
+      await methodChannel.invokeMethod('uninstallApp', {"packageName": app.packageName});
+    } catch (e, stackTrace) {
+      Logger().log(location: "AppHandler.uninstallApp", message: "Failed to uninstall $app $e, $stackTrace", level: LogLevel.exception);
     }
   }
 
@@ -275,7 +345,7 @@ class AppHandler extends GetxController {
       Get.snackbar("App order imported ( Ո‿Ո)", "app order has been imported", backgroundColor: Colors.black54, colorText: Colors.white);
       getAppList();
     } catch (e, stackTrace) {
-      print("Failed to import app order $e,$stackTrace");
+      Logger().log(location: "AppHandler.importAppOrder", message: "Failed to import app order $e, $stackTrace", level: LogLevel.exception);
       Get.snackbar("Failed to import app order ૮(˶ㅠ︿ㅠ)ა", "$e", backgroundColor: Colors.black54, colorText: Colors.white);
     }
   }

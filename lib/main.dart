@@ -1,10 +1,16 @@
+import 'dart:math' as math;
+
 import 'package:classiclauncher/handlers/app_grid_handler.dart';
 import 'package:classiclauncher/handlers/app_handler.dart';
 import 'package:classiclauncher/handlers/config_handler.dart';
 import 'package:classiclauncher/handlers/theme_handler.dart';
+import 'package:classiclauncher/models/app_info.dart';
+import 'package:classiclauncher/models/theme/app_grid_theme.dart';
 import 'package:classiclauncher/screens/selectable_container.dart';
 import 'package:classiclauncher/selection/key_input_handler.dart';
 import 'package:classiclauncher/utils/constants.dart';
+import 'package:classiclauncher/widgets/app_page.dart';
+import 'package:classiclauncher/widgets/custom_page_view.dart';
 import 'package:classiclauncher/widgets/page_indicator.dart';
 import 'package:classiclauncher/widgets/selectable/selectable.dart';
 import 'package:classiclauncher/widgets/selectable/selectable_controller.dart';
@@ -50,6 +56,19 @@ class _MyHomePageState extends State<MyHomePage> {
   final ThemeHandler themeHandler = Get.find<ThemeHandler>();
   final SelectableController controller = SelectableController(route: "/");
   final AppGridHandler appGridHandler = Get.find<AppGridHandler>();
+
+  List<List<T>> splitList<T>(List<T> list, int countPerSplit) {
+    if (countPerSplit <= 0) {
+      return [];
+    }
+
+    List<List<T>> result = [];
+    for (var i = 0; i < list.length; i += countPerSplit) {
+      int end = (i + countPerSplit < list.length) ? i + countPerSplit : list.length;
+      result.add(list.sublist(i, end));
+    }
+    return result;
+  }
 
   @override
   Widget build(BuildContext context) {

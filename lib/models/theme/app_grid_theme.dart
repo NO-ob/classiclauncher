@@ -64,7 +64,7 @@ class AppGridTheme extends Equatable {
     fontWeight: FontWeight.w500,
     fontFamily: "SlatePro",
     height: 1,
-    color: Color(0xFFe6e6e6),
+    color: appCardTextColour,
     shadows: [
       Shadow(offset: Offset(-0.5, -0.5), color: appCardTextOutlineColour),
       Shadow(offset: Offset(0.5, -0.5), color: appCardTextOutlineColour),

@@ -17,6 +17,8 @@ abstract class _$LauncherThemeCWProxy {
 
   LauncherTheme navBarTheme(NavBarTheme navBarTheme);
 
+  LauncherTheme uninstallButtonTheme(UninstallButtonTheme uninstallButtonTheme);
+
   /// Creates a new instance with the provided field values.
   /// Passing `null` to a nullable field nullifies it, while `null` for a non-nullable field is ignored. To update a single field use `LauncherTheme(...).copyWith.fieldName(value)`.
   ///
@@ -30,6 +32,7 @@ abstract class _$LauncherThemeCWProxy {
     PageIndicatorTheme pageIndicatorTheme,
     SettingsTheme settingsTheme,
     NavBarTheme navBarTheme,
+    UninstallButtonTheme uninstallButtonTheme,
   });
 }
 
@@ -61,6 +64,11 @@ class _$LauncherThemeCWProxyImpl implements _$LauncherThemeCWProxy {
       call(navBarTheme: navBarTheme);
 
   @override
+  LauncherTheme uninstallButtonTheme(
+    UninstallButtonTheme uninstallButtonTheme,
+  ) => call(uninstallButtonTheme: uninstallButtonTheme);
+
+  @override
   /// Creates a new instance with the provided field values.
   /// Passing `null` to a nullable field nullifies it, while `null` for a non-nullable field is ignored. To update a single field use `LauncherTheme(...).copyWith.fieldName(value)`.
   ///
@@ -74,6 +82,7 @@ class _$LauncherThemeCWProxyImpl implements _$LauncherThemeCWProxy {
     Object? pageIndicatorTheme = const $CopyWithPlaceholder(),
     Object? settingsTheme = const $CopyWithPlaceholder(),
     Object? navBarTheme = const $CopyWithPlaceholder(),
+    Object? uninstallButtonTheme = const $CopyWithPlaceholder(),
   }) {
     return LauncherTheme(
       longPressActionDuration:
@@ -103,6 +112,12 @@ class _$LauncherThemeCWProxyImpl implements _$LauncherThemeCWProxy {
           ? _value.navBarTheme
           // ignore: cast_nullable_to_non_nullable
           : navBarTheme as NavBarTheme,
+      uninstallButtonTheme:
+          uninstallButtonTheme == const $CopyWithPlaceholder() ||
+              uninstallButtonTheme == null
+          ? _value.uninstallButtonTheme
+          // ignore: cast_nullable_to_non_nullable
+          : uninstallButtonTheme as UninstallButtonTheme,
     );
   }
 }
@@ -141,6 +156,11 @@ LauncherTheme _$LauncherThemeFromJson(Map<String, dynamic> json) =>
       navBarTheme: json['navBarTheme'] == null
           ? const NavBarTheme()
           : NavBarTheme.fromJson(json['navBarTheme'] as Map<String, dynamic>),
+      uninstallButtonTheme: json['uninstallButtonTheme'] == null
+          ? const UninstallButtonTheme()
+          : UninstallButtonTheme.fromJson(
+              json['uninstallButtonTheme'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$LauncherThemeToJson(
@@ -151,6 +171,7 @@ Map<String, dynamic> _$LauncherThemeToJson(
   'pageIndicatorTheme': instance.pageIndicatorTheme,
   'settingsTheme': instance.settingsTheme,
   'navBarTheme': instance.navBarTheme,
+  'uninstallButtonTheme': instance.uninstallButtonTheme,
 };
 
 const _$LauncherThemeJsonSchema = {
@@ -162,6 +183,7 @@ const _$LauncherThemeJsonSchema = {
     'pageIndicatorTheme': {r'$ref': r'#/$defs/PageIndicatorTheme'},
     'settingsTheme': {r'$ref': r'#/$defs/SettingsTheme'},
     'navBarTheme': {r'$ref': r'#/$defs/NavBarTheme'},
+    'uninstallButtonTheme': {r'$ref': r'#/$defs/UninstallButtonTheme'},
   },
   r'$defs': {
     'Duration': {'type': 'object', 'properties': {}},
@@ -259,6 +281,15 @@ const _$LauncherThemeJsonSchema = {
         'navBarIconSize': {'type': 'number', 'default': 48.0},
         'navBarSpacing': {'type': 'number', 'default': 16.0},
         'iconColour': {r'$ref': r'#/$defs/Color'},
+      },
+    },
+    'UninstallButtonTheme': {
+      'type': 'object',
+      'properties': {
+        'uninstallButtonColour': {r'$ref': r'#/$defs/Color'},
+        'uninstallButtonBorderColour': {r'$ref': r'#/$defs/Color'},
+        'uninstallButtonIconColour': {r'$ref': r'#/$defs/Color'},
+        'uninstallButtonSize': {'type': 'number', 'default': 22.0},
       },
     },
   },

@@ -5,9 +5,8 @@ import 'package:equatable/equatable.dart';
 class AppInfo extends Equatable {
   final String packageName;
   final String title;
-  final Uint8List icon;
 
-  const AppInfo({required this.packageName, required this.title, required this.icon});
+  const AppInfo({required this.packageName, required this.title});
 
   @override
   List<Object?> get props => [packageName, title];

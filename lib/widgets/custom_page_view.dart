@@ -1,10 +1,80 @@
 import 'package:classiclauncher/models/key_press.dart';
 import 'package:classiclauncher/screens/select_gesture_detector.dart';
+import 'package:classiclauncher/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
-// CustomPageView unchanged except removing currentPage prop and reading from handler
+/*class CustomPageTest extends StatefulWidget {
+  final List<Widget> children;
+  final double width;
+  final double height;
+  final AnimationController controller;
+  final ValueNotifier<Direction?> directionNotifier;
+
+  final int currentPage;
+
+  const CustomPageTest({
+    super.key,
+    required this.children,
+    required this.width,
+    required this.height,
+    required this.controller,
+    required this.directionNotifier,
+    required this.currentPage,
+  });
+
+  @override
+  State<CustomPageTest> createState() => _CustomPageTestState();
+}
+
+class _CustomPageTestState extends State<CustomPageTest> {
+  late final Animation<double> scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    scaleAnimation = Tween<double>(begin: 0.98, end: 1.0).animate(widget.controller);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.children.isEmpty) return SizedBox.shrink();
+
+    print("moving ${widget.currentPage} -> ${widget.directionNotifier.value}");
+
+    return SizedBox(
+      width: widget.width,
+      height: widget.height,
+      child: ValueListenableBuilder<Direction?>(
+        valueListenable: widget.directionNotifier,
+        builder: (context, direction, _) => AnimatedBuilder(
+          animation: widget.controller,
+          builder: (_, __) {
+            double t = widget.controller.value;
+            return Stack(
+              children: [
+                Positioned(
+                  left: -t * widget.width + (-widget.width * widget.currentPage),
+                  height: widget.height,
+                  top: 0,
+                  child: SizedBox(
+                    width: widget.children.length * widget.width,
+                    height: widget.height,
+                    child: Row(
+                      children: [for (Widget child in widget.children) SizedBox(height: widget.height, width: widget.width, child: child)],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}*/
+
 class CustomPage extends StatefulWidget {
   final List<Widget> children;
   final double width;
@@ -40,9 +110,9 @@ class _CustomPageState extends State<CustomPage> {
   @override
   Widget build(BuildContext context) {
     if (widget.children.isEmpty) return SizedBox.shrink();
-    Widget current = widget.children[widget.currentPage];
-    Widget? next = widget.currentPage + 1 < widget.children.length ? widget.children[widget.currentPage + 1] : null;
-    Widget? previous = widget.currentPage - 1 >= 0 ? widget.children[widget.currentPage - 1] : null;
+
+    Logger().log(location: "CustomPage.build", message: "moving ${widget.currentPage} -> ${widget.directionNotifier.value}");
+
     return SizedBox(
       width: widget.width,
       height: widget.height,
@@ -54,24 +124,27 @@ class _CustomPageState extends State<CustomPage> {
             double t = widget.controller.value;
             return Stack(
               children: [
-                if (next != null)
+                if (widget.currentPage + 1 < widget.children.length)
                   Transform.translate(
                     offset: Offset(direction == Direction.left ? (widget.width - (t * widget.width) - ((1 - t) * (widget.width * 0.3))) : widget.width, 0),
                     child: Opacity(
                       opacity: widget.controller.value,
-                      child: Transform.scale(scale: scaleAnimation.value, child: next),
+                      child: Transform.scale(scale: scaleAnimation.value, child: widget.children[widget.currentPage + 1]),
                     ),
                   ),
 
-                if (previous != null)
+                if (widget.currentPage - 1 >= 0)
                   Transform.translate(
                     offset: Offset(direction == Direction.right ? -(widget.width - (t * widget.width) - ((1 - t) * (widget.width * 0.3))) : widget.width, 0),
                     child: Opacity(
                       opacity: widget.controller.value,
-                      child: Transform.scale(scale: scaleAnimation.value, child: previous),
+                      child: Transform.scale(scale: scaleAnimation.value, child: widget.children[widget.currentPage - 1]),
                     ),
                   ),
-                Transform.translate(offset: Offset(direction == Direction.left ? -(t * widget.width) : t * widget.width, 0), child: current),
+                Transform.translate(
+                  offset: Offset(direction == Direction.left ? -(t * widget.width) : t * widget.width, 0),
+                  child: widget.children[widget.currentPage],
+                ),
               ],
             );
           },
@@ -200,7 +273,7 @@ class _CustomPageViewState extends State<CustomPageView> with SingleTickerProvid
           return;
         }
         int timeLeft = 300 - (300 * controller.value).toInt();
-        if (controller.value > 0.5) {
+        if (controller.value > 0.3) {
           controller.animateTo(1, duration: Duration(milliseconds: timeLeft));
         } else {
           controller.animateTo(0, duration: Duration(milliseconds: timeLeft));

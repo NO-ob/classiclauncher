@@ -4,6 +4,7 @@ import 'package:classiclauncher/handlers/theme_handler.dart';
 import 'package:classiclauncher/models/enums.dart';
 import 'package:classiclauncher/selection/key_input_handler.dart';
 import 'package:classiclauncher/utils/launcher_utils.dart';
+import 'package:classiclauncher/utils/logger.dart';
 import 'package:classiclauncher/widgets/selectable/selectable.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -49,26 +50,27 @@ class SelectableController {
         handleDirection(keyPress, direction);
         return;
       }
+
       if (keyPress.state == KeyState.keyUp && heldInputs[keyPress.keyCode] != null) {
         heldInputs[keyPress.keyCode]?.cancel();
         heldInputs.remove(keyPress.keyCode);
-        print("long press cancelled $keyPress");
+        Logger().log(location: "SelectableController", message: "long press cancelled $keyPress");
       }
 
       if (keyPress.state == KeyState.keyDown && !heldInputs.containsKey(keyPress.keyCode)) {
-        print("long press queued $keyPress");
+        Logger().log(location: "SelectableController", message: "long press queued $keyPress");
         queueLongPress(keyPress);
       }
 
       if (keyPress.state == KeyState.keyUp && cancelRelease.contains(keyPress.keyCode)) {
         cancelRelease.remove(keyPress.keyCode);
-        print("Cancelling release for $keyPress");
+        Logger().log(location: "SelectableController", message: "Cancelling release for $keyPress");
         return;
       }
 
       inputNotifier.value = keyPress;
 
-      print("input announced $keyPress");
+      Logger().log(location: "SelectableController", message: "input announced $keyPress");
       return;
     });
   }
@@ -77,7 +79,7 @@ class SelectableController {
     heldInputs.putIfAbsent(
       keyPress.keyCode,
       () => Timer(themeHandler.theme.value.longPressActionDuration, () {
-        print("long press detected $keyPress");
+        Logger().log(location: "SelectableController.queueLongPress", message: "long press detected $keyPress");
         cancelRelease.add(keyPress.keyCode);
         heldInputs[keyPress.keyCode]!.cancel();
         heldInputs.remove(keyPress.keyCode);
@@ -95,7 +97,10 @@ class SelectableController {
       return;
     }
 
-    print("Doing move $direction, ${inputsSinceLastFrame.isNotEmpty ? MoveType.hard : MoveType.soft}");
+    Logger().log(
+      location: "SelectableController.handleDirection",
+      message: "Doing move $direction, ${inputsSinceLastFrame.isNotEmpty ? MoveType.hard : MoveType.soft}",
+    );
 
     handleMove(direction, inputsSinceLastFrame.isNotEmpty ? MoveType.hard : MoveType.soft);
 
@@ -126,7 +131,7 @@ class SelectableController {
       return;
     }
     selectedItemNotifier.value = '${currentZone?.zoneKey}_$index';
-    print(selectedItemNotifier.value);
+    Logger().log(location: "SelectableController.setSelected", message: "${selectedItemNotifier.value}");
     LauncherUtils.doFeedback();
   }
 
@@ -148,10 +153,10 @@ class SelectableController {
       return;
     }
 
-    _moveBetweenzones(direction, moveType);
+    moveBetweenZones(direction, moveType);
   }
 
-  void _moveBetweenzones(Direction direction, MoveType moveType) {
+  void moveBetweenZones(Direction direction, MoveType moveType) {
     if (moveType == MoveType.soft) {
       return;
     }

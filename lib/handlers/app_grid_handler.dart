@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:classiclauncher/models/app_info.dart';
 import 'package:classiclauncher/models/key_press.dart';
 import 'package:classiclauncher/selection/key_input_handler.dart';
+import 'package:classiclauncher/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -17,6 +18,8 @@ class AppGridHandler extends GetxController {
   late StreamSubscription inputSub;
   Rx<double?> fingerX = Rx(null);
   Rx<double?> fingerY = Rx(null);
+  late AnimationController editingAnimationController;
+  late Animation<double> editingScaleAnimation;
 
   ValueNotifier<int> pageNotifier = ValueNotifier(0);
 
@@ -26,10 +29,11 @@ class AppGridHandler extends GetxController {
 
     ever(editing, (_) {
       if (editing.value) {
-        print("editng started");
+        Logger().log(location: "AppGridHandler.onInit", message: "editng started", level: LogLevel.debug);
+
         return;
       }
-      print("editng ended");
+      Logger().log(location: "AppGridHandler.onInit", message: "editng ended", level: LogLevel.debug);
     });
 
     inputSub = Get.find<KeyInputHandler>().keyStream.listen((keyPress) {
@@ -39,11 +43,27 @@ class AppGridHandler extends GetxController {
     });
   }
 
-  void stopEdit() {
+  void initAnimation(TickerProvider vsync) {
+    editingAnimationController = AnimationController(vsync: vsync, duration: Duration(milliseconds: 800));
+    editingScaleAnimation = Tween<double>(begin: 1, end: 0.8).animate(CurvedAnimation(parent: editingAnimationController, curve: Curves.easeInOut));
+    ever(editing, (bool isEditing) {
+      if (isEditing) {
+        editingAnimationController.repeat(reverse: true);
+      } else {
+        editingAnimationController.stop();
+        editingAnimationController.reset();
+      }
+    });
+  }
+
+  void clearMove() {
     moving.value = null;
-    editing.value = false;
     fingerX.value = null;
     fingerY.value = null;
+  }
+
+  void stopEdit() {
+    editing.value = false;
   }
 
   void clearTimer() {

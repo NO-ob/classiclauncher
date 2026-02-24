@@ -1,9 +1,11 @@
 package com.noaisu.classiclauncher
 
 import android.app.Activity
+import android.content.BroadcastReceiver
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
@@ -14,6 +16,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.provider.Settings
@@ -41,17 +44,79 @@ import java.io.OutputStream
 
 
 class MainActivity : FlutterActivity() {
-    private val METHODCHANNEL = "com.noaisu.classicLauncher/app"
-    private val EVENTCHANNEL = "com.noaisu.classicLauncher/input"
+    private val appMethodChannel = "com.noaisu.classicLauncher/app"
+    private val inputEventChannel = "com.noaisu.classicLauncher/input"
+    private val appChangeEventChannel = "com.noaisu.classicLauncher/appChange"
+
     private var eventSink: EventChannel.EventSink? = null
-  override fun getRenderMode() = RenderMode.texture
-  override fun getTransparencyMode() = TransparencyMode.transparent
+
+    private var appEventSink: EventChannel.EventSink? = null
+
+
+
+
     private var methodResult: MethodChannel.Result? = null
     private var SAFUri: String? = ""
 
+
+    private val packageReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            Log.d("PackageReceiver", "onReceive fired: ${intent?.action} ${intent?.data}")
+            val action = intent?.action ?: return
+            val packageName = intent.data?.schemeSpecificPart ?: return
+            val status = when (action) {
+                Intent.ACTION_PACKAGE_ADDED -> "added"
+                Intent.ACTION_PACKAGE_REMOVED -> "removed"
+                Intent.ACTION_PACKAGE_REPLACED -> "replaced"
+                else -> return
+            }
+
+            val appName = try {
+                val pm = context?.packageManager ?: return
+                val appInfo = pm.getApplicationInfo(packageName, 0)
+                pm.getApplicationLabel(appInfo).toString()
+            } catch (e: Exception) {
+                packageName
+            }
+
+
+
+            CoroutineScope(Dispatchers.Main).launch {
+                appEventSink?.success(mapOf(
+                    "packageName" to packageName,
+                    "title" to appName,
+                    "status" to status
+                ))
+            }
+        }
+    }
+
+    override fun getRenderMode() = RenderMode.surface
+    override fun getTransparencyMode() = TransparencyMode.transparent
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED)
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addAction(Intent.ACTION_PACKAGE_REPLACED)
+            addDataScheme("package")
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(packageReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(packageReceiver, filter)
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        try { unregisterReceiver(packageReceiver) } catch (_: Exception) {}
+    }
+
+
   override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
     super.configureFlutterEngine(flutterEngine)
-    MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHODCHANNEL).setMethodCallHandler {
+    MethodChannel(flutterEngine.dartExecutor.binaryMessenger, appMethodChannel).setMethodCallHandler {
       call, result ->
       when(call.method){
         "getApps" -> {
@@ -59,6 +124,27 @@ class MainActivity : FlutterActivity() {
             val apps = getAppList(applicationContext)
             result.success(apps)
           }}
+
+          "getAppInfo" -> {
+              CoroutineScope(Dispatchers.Main).launch {
+                  val packageName: String? = call.argument("packageName") as String?
+                  if(packageName == null){
+                      result.success(null)
+                      return@launch
+                  }
+                  val apps = getAppList(applicationContext)
+                  result.success(apps)
+              }}
+
+          "getAppIcon" -> {
+              CoroutineScope(Dispatchers.Main).launch {
+                  val packageName: String? = call.argument("packageName") as String?
+                  if(packageName == null){
+                      result.success(null)
+                      return@launch
+                  }
+                  result.success(getAppIcon(applicationContext, packageName))
+              }}
 
           "launchApp" -> {
               CoroutineScope(Dispatchers.Main).launch {
@@ -103,6 +189,16 @@ class MainActivity : FlutterActivity() {
                   getFileUri()
               }
           }
+          "uninstallApp" -> {
+              val packageName: String? = call.argument("packageName") as String?
+              if(packageName == null){
+                  result.success(false)
+                  return@setMethodCallHandler
+              }
+
+              uninstallApp(packageName)
+              result.success(true)
+          }
 
           "writeFile" -> {
               val fileBytes = call.argument<ByteArray>("fileData")
@@ -132,11 +228,11 @@ class MainActivity : FlutterActivity() {
           }
 
               "openWallpaperPicker" -> {
-           
+
                   CoroutineScope(Dispatchers.Main).launch {
                    openWallpaperPicker()
                         result.success(null)}
-         
+
           }
 
 
@@ -153,7 +249,18 @@ class MainActivity : FlutterActivity() {
     }
 
 
-      EventChannel(flutterEngine.dartExecutor.binaryMessenger, EVENTCHANNEL).setStreamHandler(
+      EventChannel(flutterEngine.dartExecutor.binaryMessenger, appChangeEventChannel).setStreamHandler(
+          object : EventChannel.StreamHandler {
+              override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                  appEventSink = events
+              }
+              override fun onCancel(arguments: Any?) {
+                  appEventSink = null
+              }
+          }
+      )
+
+      EventChannel(flutterEngine.dartExecutor.binaryMessenger, inputEventChannel).setStreamHandler(
           object : EventChannel.StreamHandler {
               override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
                   eventSink = events
@@ -184,6 +291,14 @@ class MainActivity : FlutterActivity() {
      suspend fun openWallpaperPicker() {
          val intent = Intent(Intent.ACTION_SET_WALLPAPER)
          startActivity(intent)
+    }
+
+    fun uninstallApp(packageName: String) {
+        val intent = Intent(Intent.ACTION_DELETE).apply {
+            data = Uri.parse("package:$packageName")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        startActivity(intent)
     }
 
     suspend fun getFileBytesFromUri(uriString: String): ByteArray? {
@@ -339,11 +454,9 @@ suspend fun getAppList(context: Context): List<Map<String, Any?>> =
 
         val pm: PackageManager = context.packageManager
 
-  
         val intent = Intent(Intent.ACTION_MAIN, null).apply {
             addCategory(Intent.CATEGORY_LAUNCHER)
         }
-
         val launchableApps = pm.queryIntentActivities(intent, 0)
             .mapNotNull { resolveInfo ->
                 val appInfo = resolveInfo.activityInfo.applicationInfo
@@ -351,11 +464,9 @@ suspend fun getAppList(context: Context): List<Map<String, Any?>> =
 
                 try {
                     val appName = pm.getApplicationLabel(appInfo).toString()
-                    val iconBytes = pm.getApplicationIcon(appInfo).toByteArray()
                     mapOf(
                         "packageName" to packageName,
                         "title" to appName,
-                        "icon" to iconBytes
                     )
                 } catch (e: Exception) {
                     null
@@ -364,6 +475,22 @@ suspend fun getAppList(context: Context): List<Map<String, Any?>> =
 
         launchableApps.sortedBy { it["title"] as String } // optional alphabetical
     }
+
+    suspend fun getAppIcon(context: Context, packageName: String):  ByteArray? =
+        withContext(Dispatchers.IO) {
+
+            val pm: PackageManager = context.packageManager
+
+
+            try {
+
+                return@withContext pm.getApplicationIcon(packageName).toByteArray()
+
+            } catch (e: Exception) {
+                return@withContext null
+            }
+
+        }
 
 
  //   @RequiresPermission(anyOf = ["android.permission.READ_WALLPAPER_INTERNAL", Manifest.permission.MANAGE_EXTERNAL_STORAGE])
@@ -483,3 +610,5 @@ private fun PackageManager.getInstalledPackagesCompat(flags: Long = 0L): List<Pa
 
 
 }
+
+

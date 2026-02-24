@@ -1,3 +1,4 @@
+import 'package:classiclauncher/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:json_annotation/json_annotation.dart';
 
@@ -36,7 +37,7 @@ class ColourConverter implements JsonConverter<Color, String> {
 
     Color colour = Color.fromARGB(alpha, red, green, blue);
 
-    print("Converted $json to $colour");
+    Logger().log(location: "ColourConverter.fromJson", message: "Converted $json to $colour");
 
     return colour;
   }
@@ -54,7 +55,7 @@ class ColourConverter implements JsonConverter<Color, String> {
 
     String rgbaString = "RGBA#${toHex(red)}${toHex(green)}${toHex(blue)}${toHex(alpha)}";
 
-    print("Converting $object to $rgbaString");
+    Logger().log(location: "ColourConverter.toJson", message: "Converting $object to $rgbaString");
 
     return rgbaString;
   }

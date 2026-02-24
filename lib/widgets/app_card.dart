@@ -8,7 +8,9 @@ import 'package:classiclauncher/handlers/theme_handler.dart';
 import 'package:classiclauncher/screens/select_gesture_detector.dart';
 import 'package:classiclauncher/screens/selectable_container.dart';
 import 'package:classiclauncher/utils/launcher_utils.dart';
+import 'package:classiclauncher/utils/logger.dart';
 import 'package:classiclauncher/widgets/shadowed_image.dart';
+import 'package:classiclauncher/widgets/uninstall_button.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -23,54 +25,31 @@ class AppCard extends StatefulWidget {
   State<AppCard> createState() => _AppCardState();
 }
 
-class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
+class _AppCardState extends State<AppCard> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   ThemeHandler themeHandler = Get.find<ThemeHandler>();
   AppHandler appHandler = Get.find<AppHandler>();
   AppGridHandler appGridHandler = Get.find<AppGridHandler>();
-  late AnimationController controller;
-  late StreamSubscription<bool> sub;
-  late Animation<double> scaleAnimation;
-  bool isFingerDown = false;
-  @override
-  void initState() {
-    controller = AnimationController(vsync: this, duration: Duration(milliseconds: 800));
 
-    scaleAnimation = Tween<double>(begin: 1, end: 0.8).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOut));
-    onEditChange(appGridHandler.editing.value);
-    sub = appGridHandler.editing.listen(onEditChange);
-    super.initState();
-  }
+  bool isFingerDown = false;
 
   @override
   void dispose() {
-    sub.cancel();
-    controller.dispose();
-
     super.dispose();
   }
 
-  void onEditChange(bool editing) {
-    if (editing) {
-      controller.repeat(reverse: true);
-      return;
-    }
-
-    controller.stop();
-    controller.reset();
-  }
-
   void startEdit(bool dragging) {
-    if (appGridHandler.editing.value) {
-      return;
-    }
-    appGridHandler.editing.value = true;
     appGridHandler.dragging.value = dragging;
+    appGridHandler.editing.value = true;
     LauncherUtils.doFeedback();
     appGridHandler.moving.value = widget.appInfo;
+
+    print("appGridHandler.moving.value");
   }
 
   void onDropApp() async {
-    appGridHandler.stopEdit();
+    appGridHandler.clearMove();
 
     if (appGridHandler.appMoveCol == null && appGridHandler.appMoveRow == null) {
       return;
@@ -85,6 +64,10 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
     int appPosition = pageStart + offset;
 
     await appHandler.moveApp(appPosition: appPosition, app: widget.appInfo);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      appGridHandler.dragging.value = false;
+    });
   }
 
   @override
@@ -92,103 +75,128 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
     return LongPressDraggable(
       hitTestBehavior: HitTestBehavior.translucent,
       hapticFeedbackOnStart: false,
+      maxSimultaneousDrags: 11,
       onDragStarted: () {
+        Logger().log(location: "AppCard.build", message: "drag started");
         startEdit(true);
       },
       onDraggableCanceled: (velocity, offset) {
-        print("cancelled");
+        Logger().log(location: "AppCard.build", message: "cancelled");
         onDropApp();
       },
       onDragEnd: (details) {
-        print("dragend");
+        Logger().log(location: "AppCard.build", message: "dragend");
         onDropApp();
       },
       onDragCompleted: () {
-        print("dragcomplete");
+        Logger().log(location: "AppCard.build", message: "ondropapp");
         onDropApp();
       },
+      delay: Duration(milliseconds: 300),
 
       feedback: SizedBox(
         width: widget.width,
         height: widget.height,
         child: Material(
           color: Colors.transparent,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Padding(
-                padding: themeHandler.theme.value.appGridTheme.appCardIconPadding,
-                child: ShadowedImage(
-                  width: themeHandler.theme.value.appGridTheme.iconSize,
-                  height: themeHandler.theme.value.appGridTheme.iconSize,
-                  imageBytes: widget.appInfo.icon,
+          child: Container(
+            width: widget.width,
+            height: widget.height,
+            decoration: themeHandler.theme.value.appGridTheme.appCardDecoration,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: themeHandler.theme.value.appGridTheme.appCardIconPadding,
+                  child: Obx(
+                    () => ShadowedImage(
+                      width: themeHandler.theme.value.appGridTheme.iconSize,
+                      height: themeHandler.theme.value.appGridTheme.iconSize,
+                      imageBytes: appHandler.appIcons[widget.appInfo.packageName],
+                    ),
+                  ),
                 ),
-              ),
-              Text(widget.appInfo.title, textAlign: TextAlign.center, style: themeHandler.theme.value.appGridTheme.appCardTextStyle),
-            ],
+                Text(widget.appInfo.title, textAlign: TextAlign.center, style: themeHandler.theme.value.appGridTheme.appCardTextStyle),
+              ],
+            ),
           ),
         ),
       ),
       child: AnimatedBuilder(
-        animation: controller,
+        animation: appGridHandler.editingAnimationController,
         builder: (_, __) {
           return Transform.scale(
-            scale: scaleAnimation.value,
-            child: Container(
-              key: ValueKey("AppCard::${widget.appInfo.packageName}::${widget.width}::${widget.height}${appHandler.installedApps.indexOf(widget.appInfo)}"),
-              width: widget.width,
-              height: widget.height,
-              decoration: themeHandler.theme.value.appGridTheme.appCardDecoration,
-              child: SelectableContainer(
-                selectableKey: "${widget.selectableKey}_${appHandler.installedApps.indexOf(widget.appInfo)}",
-                selectorTheme: themeHandler.theme.value.appGridTheme.selectorTheme,
-                canLongPress: () {
-                  return !appGridHandler.editing.value;
-                },
+            scale: appGridHandler.editingScaleAnimation.value,
+            child: Stack(
+              children: [
+                Container(
+                  key: ValueKey("AppCard::${widget.appInfo.packageName}::${widget.width}::${widget.height}${appHandler.installedApps.indexOf(widget.appInfo)}"),
+                  width: widget.width,
+                  height: widget.height,
+                  decoration: (appGridHandler.moving.value == widget.appInfo && appGridHandler.editing.value && appGridHandler.dragging.value)
+                      ? null
+                      : themeHandler.theme.value.appGridTheme.appCardDecoration,
+                  child: SelectableContainer(
+                    selectableKey: "${widget.selectableKey}_${appHandler.installedApps.indexOf(widget.appInfo)}",
+                    selectorTheme: themeHandler.theme.value.appGridTheme.selectorTheme,
+                    canLongPress: () {
+                      return !appGridHandler.editing.value;
+                    },
 
-                onTapDown: (details) {
-                  setState(() {
-                    isFingerDown = true;
-                  });
-                },
-                onTapUp: (details) {
-                  setState(() {
-                    isFingerDown = false;
-                  });
-                },
-                onTap: () {
-                  if (appGridHandler.editing.value) {
-                    appGridHandler.stopEdit();
-                    return;
-                  }
-                  appHandler.launchApp(widget.appInfo);
-                },
-                onLongPress: isFingerDown
-                    ? null
-                    : () {
-                        startEdit(false);
-                      },
-                child: Obx(() {
-                  if (appGridHandler.moving.value == widget.appInfo && appGridHandler.editing.value && appGridHandler.dragging.value) {
-                    return SizedBox.shrink();
-                  }
+                    onTapDown: (details) {
+                      setState(() {
+                        isFingerDown = true;
+                      });
+                    },
+                    onTapUp: (details) {
+                      setState(() {
+                        isFingerDown = false;
+                      });
+                    },
+                    onTap: () {
+                      if (appGridHandler.editing.value) {
+                        appGridHandler.stopEdit();
+                        appGridHandler.clearMove();
+                        return;
+                      }
+                      appHandler.launchApp(widget.appInfo);
+                    },
+                    onLongPress: () {
+                      startEdit(false);
+                    },
+                    child: Obx(() {
+                      if (appGridHandler.moving.value == widget.appInfo && appGridHandler.editing.value && appGridHandler.dragging.value) {
+                        return SizedBox.shrink();
+                      }
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Padding(
-                        padding: themeHandler.theme.value.appGridTheme.appCardIconPadding,
-                        child: ShadowedImage(
-                          width: themeHandler.theme.value.appGridTheme.iconSize,
-                          height: themeHandler.theme.value.appGridTheme.iconSize,
-                          imageBytes: widget.appInfo.icon,
-                        ),
-                      ),
-                      Text(widget.appInfo.title, textAlign: TextAlign.center, style: themeHandler.theme.value.appGridTheme.appCardTextStyle),
-                    ],
-                  );
-                }),
-              ),
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Padding(
+                            padding: themeHandler.theme.value.appGridTheme.appCardIconPadding,
+                            child: Obx(
+                              () => ShadowedImage(
+                                width: themeHandler.theme.value.appGridTheme.iconSize,
+                                height: themeHandler.theme.value.appGridTheme.iconSize,
+                                imageBytes: appHandler.appIcons[widget.appInfo.packageName],
+                              ),
+                            ),
+                          ),
+                          Text(widget.appInfo.title, textAlign: TextAlign.center, style: themeHandler.theme.value.appGridTheme.appCardTextStyle),
+                        ],
+                      );
+                    }),
+                  ),
+                ),
+                if (appGridHandler.editing.value)
+                  Obx(() {
+                    if (appGridHandler.moving.value == widget.appInfo && appGridHandler.editing.value && appGridHandler.dragging.value) {
+                      return SizedBox.shrink();
+                    }
+
+                    return Positioned(right: 0, top: 0, child: UninstallButton(appInfo: widget.appInfo));
+                  }),
+              ],
             ),
           );
         },

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:classiclauncher/handlers/theme_handler.dart';
 import 'package:classiclauncher/models/key_press.dart';
 import 'package:classiclauncher/models/theme/selector_theme.dart';
+import 'package:classiclauncher/utils/logger.dart';
 import 'package:classiclauncher/widgets/selectable/selectable.dart';
 import 'package:classiclauncher/widgets/selectable/selectable_controller.dart';
 import 'package:flutter/material.dart';
@@ -59,9 +60,9 @@ class _SelectableContainerState extends State<SelectableContainer> {
 
     if (newSelected != selected) {
       if (newSelected) {
-        print("${widget.selectableKey} selected");
+        Logger().log(location: "SelectableContainer.onSelected", message: "${widget.selectableKey} selected");
       } else {
-        print("${widget.selectableKey} deselected");
+        Logger().log(location: "SelectableContainer.onSelected", message: "${widget.selectableKey} deselected");
       }
       widget.selectedCallback?.call(newSelected);
       setState(() {
@@ -74,7 +75,7 @@ class _SelectableContainerState extends State<SelectableContainer> {
     bool canLongPress = widget.canLongPress?.call() ?? true;
 
     if (!canLongPress) {
-      print("long press test failed reutning");
+      Logger().log(location: "SelectableContainer.onLongPress", message: "long press test failed returning");
       return;
     }
     if (!mounted || !selected) {
@@ -91,7 +92,7 @@ class _SelectableContainerState extends State<SelectableContainer> {
     }
 
     widget.onLongPress?.call();
-    print("${widget.selectableKey} long pressed/released");
+    Logger().log(location: "SelectableContainer.onLongPress", message: "${widget.selectableKey} long pressed/released");
     setState(() {
       buttonPressed = false;
     });
@@ -105,12 +106,12 @@ class _SelectableContainerState extends State<SelectableContainer> {
     KeyPress? keyPress = controller!.inputNotifier.value;
 
     if (keyPress?.state == KeyState.keyDown && keyPress?.input == Input.select && buttonPressed) {
-      print("${widget.selectableKey} returning because pressed and down");
+      Logger().log(location: "SelectableContainer.onInput", message: "${widget.selectableKey} returning because pressed and down");
       return;
     }
 
     if (keyPress?.state == KeyState.keyDown && keyPress?.input == Input.select) {
-      print("${widget.selectableKey} pressed");
+      Logger().log(location: "SelectableContainer.onInput", message: "${widget.selectableKey} pressed");
       setState(() {
         buttonPressed = true;
       });
@@ -127,29 +128,35 @@ class _SelectableContainerState extends State<SelectableContainer> {
 
     setState(() {
       buttonPressed = false;
-      print("${widget.selectableKey} released");
+      Logger().log(location: "SelectableContainer.onInput", message: "${widget.selectableKey} released");
     });
   }
 
   void initListener() {
     selected = controller?.selectedItemNotifier.value == widget.selectableKey;
     controller?.selectedItemNotifier.addListener(onSelected);
-
     controller?.longPressNotifier.addListener(onLongPress);
-
     controller?.inputNotifier.addListener(onInput);
   }
 
   @override
   void initState() {
-    selected = false;
-    print("${widget.selectableKey} init");
+    selected = controller?.selectedItemNotifier.value == widget.selectableKey;
+    Logger().log(location: "SelectableContainer.initState", message: "${widget.selectableKey} init");
     super.initState();
   }
 
   Color getHoldColour(Color colour) {
     Color whiter = Color.lerp(colour, Colors.white, 0.1)!;
     return whiter.withValues(alpha: (colour.a * 0.8));
+  }
+
+  @override
+  void dispose() {
+    controller?.selectedItemNotifier.removeListener(onSelected);
+    controller?.longPressNotifier.removeListener(onLongPress);
+    controller?.inputNotifier.removeListener(onInput);
+    super.dispose();
   }
 
   @override

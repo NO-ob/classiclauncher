@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:classiclauncher/handlers/app_grid_handler.dart';
 import 'package:classiclauncher/handlers/app_handler.dart';
@@ -6,12 +7,14 @@ import 'package:classiclauncher/handlers/theme_handler.dart';
 import 'package:classiclauncher/models/app_info.dart';
 import 'package:classiclauncher/models/enums.dart';
 import 'package:classiclauncher/models/key_press.dart';
+import 'package:classiclauncher/models/theme/app_grid_theme.dart';
 import 'package:classiclauncher/models/theme/launcher_theme.dart';
 import 'package:classiclauncher/widgets/app_drag_overlay.dart';
 import 'package:classiclauncher/widgets/app_page.dart';
 import 'package:classiclauncher/widgets/custom_page_view.dart';
 import 'package:classiclauncher/widgets/selectable/selectable.dart';
 import 'package:classiclauncher/widgets/selectable/selectable_controller.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -23,18 +26,19 @@ class AppGrid extends StatefulWidget {
   State<AppGrid> createState() => _AppGridState();
 }
 
-class _AppGridState extends State<AppGrid> implements SelectableZone {
+class _AppGridState extends State<AppGrid> with SingleTickerProviderStateMixin implements SelectableZone {
   SelectableController? controller;
   AppHandler appHandler = Get.find<AppHandler>();
   ThemeHandler themeHandler = Get.find<ThemeHandler>();
   AppGridHandler appGridHandler = Get.find<AppGridHandler>();
-  late List<Widget> pages;
+  List<AppInfo> installedApps = [];
 
   late Direction nextDirection;
   late Direction prevDirection;
   late int childrenPerPage;
   late LauncherTheme launcherTheme;
   int lastPageCount = -1;
+  late StreamSubscription installedAppsSub;
 
   @override
   String zoneKey = "AppGrid";
@@ -44,6 +48,20 @@ class _AppGridState extends State<AppGrid> implements SelectableZone {
   @override
   void initState() {
     launcherTheme = themeHandler.theme.value;
+    installedApps = appHandler.installedApps.toList();
+    appGridHandler.initAnimation(this);
+
+    installedAppsSub = appHandler.installedApps.listen((newApps) {
+      if (!mounted) {
+        return;
+      }
+
+      if (listEquals(installedApps, newApps)) {
+        return;
+      }
+      setState(() => installedApps = newApps.toList());
+    });
+
     ever(themeHandler.theme, (LauncherTheme theme) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -190,6 +208,7 @@ class _AppGridState extends State<AppGrid> implements SelectableZone {
   @override
   void dispose() {
     controller?.unregisterZone(this);
+    appGridHandler.editingAnimationController.dispose();
     super.dispose();
   }
 
@@ -206,27 +225,30 @@ class _AppGridState extends State<AppGrid> implements SelectableZone {
     }
   }
 
-  List<Widget> buildPages(int pageCount) {
-    if (lastPageCount == pageCount) {
-      return pages;
-    }
-
-    lastPageCount = pageCount;
-
-    pages = [
-      for (int i = 0; i < pageCount; i++)
-        AppPage(key: ValueKey("AppPadd::$i"), width: widget.constraints.maxWidth, height: widget.constraints.maxHeight, page: i, selectableKey: zoneKey),
-    ];
-
-    return pages;
-  }
-
   @override
   Widget build(BuildContext context) {
     int columns = themeHandler.theme.value.appGridTheme.columns;
     int rows = themeHandler.theme.value.appGridTheme.rows;
     int appsPerPage = rows * columns;
-    List<AppInfo> apps = appHandler.installedApps;
+
+    List<Widget> pages = [];
+
+    for (int i = 0; i < (installedApps.length / appsPerPage).ceil(); i++) {
+      int start = i * themeHandler.theme.value.appGridTheme.appsPerPage;
+      int end = math.min(start + themeHandler.theme.value.appGridTheme.appsPerPage, appHandler.installedApps.length);
+
+      List<AppInfo> pageApps = appHandler.installedApps.sublist(start, end);
+      pages.add(
+        AppPage(
+          key: ValueKey("AppGrid::page_$i"),
+          page: i,
+          selectableKey: zoneKey,
+          apps: pageApps,
+          width: widget.constraints.maxWidth,
+          height: widget.constraints.maxHeight,
+        ),
+      );
+    }
 
     return Listener(
       behavior: HitTestBehavior.translucent,
@@ -272,16 +294,7 @@ class _AppGridState extends State<AppGrid> implements SelectableZone {
       child: Stack(
         children: [
           AppDragOverlay(width: widget.constraints.maxWidth, height: widget.constraints.maxHeight),
-          Obx(
-            () => IgnorePointer(
-              ignoring: appGridHandler.editing.value,
-              child: CustomPageView(
-                constraints: widget.constraints,
-                pageNotifier: appGridHandler.pageNotifier,
-                children: buildPages((apps.length / appsPerPage).ceil()),
-              ),
-            ),
-          ),
+          CustomPageView(constraints: widget.constraints, pageNotifier: appGridHandler.pageNotifier, children: pages),
         ],
       ),
     );
