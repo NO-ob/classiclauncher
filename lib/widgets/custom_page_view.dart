@@ -1,5 +1,6 @@
 import 'package:classiclauncher/models/key_press.dart';
 import 'package:classiclauncher/screens/select_gesture_detector.dart';
+import 'package:classiclauncher/utils/custom_page_controller.dart';
 import 'package:classiclauncher/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -157,17 +158,15 @@ class _CustomPageState extends State<CustomPage> {
 class CustomPageView extends StatefulWidget {
   final BoxConstraints constraints;
   final List<Widget> children;
-  final ValueNotifier<int> pageNotifier;
+  final CustomPageController controller;
 
-  const CustomPageView({super.key, required this.constraints, required this.children, required this.pageNotifier});
+  const CustomPageView({super.key, required this.constraints, required this.children, required this.controller});
 
   @override
   State<CustomPageView> createState() => _CustomPageViewState();
 }
 
 class _CustomPageViewState extends State<CustomPageView> with SingleTickerProviderStateMixin {
-  late AnimationController controller;
-  final ValueNotifier<Direction?> direction = ValueNotifier(null);
   late List<Widget> children;
 
   int currentPage = 0;
@@ -175,75 +174,33 @@ class _CustomPageViewState extends State<CustomPageView> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    currentPage = widget.pageNotifier.value;
+    currentPage = widget.controller.currentPage.value;
+    widget.controller.pages = widget.children.length;
+
     children = widget.children.map((c) => RepaintBoundary(child: c)).toList();
 
-    controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 300), lowerBound: 0, upperBound: 1.0);
-
-    controller.addListener(() {
-      if (controller.isCompleted && controller.value == 1) {
-        if (direction.value == Direction.left && currentPage < children.length - 1) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            setPage(currentPage + 1);
-            controller.reset();
-          });
-        } else if (direction.value == Direction.right && currentPage > 0) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            setPage(currentPage - 1);
-            controller.reset();
-          });
-        }
+    widget.controller.currentPage.addListener(() {
+      if (widget.controller.currentPage.value < 0) {
+        widget.controller.currentPage.value == 0;
       }
+
+      if (widget.controller.currentPage.value >= widget.children.length) {
+        widget.controller.currentPage.value == widget.children.length - 1;
+      }
+
+      setState(() {
+        currentPage = widget.controller.currentPage.value;
+      });
     });
-
-    widget.pageNotifier.addListener(() {
-      int newPage = widget.pageNotifier.value;
-
-      if (newPage == currentPage) {
-        return;
-      }
-
-      if (newPage > widget.children.length - 1) {
-        widget.pageNotifier.value = widget.children.length - 1;
-        return;
-      }
-
-      if (newPage < 0) {
-        widget.pageNotifier.value = 0;
-
-        return;
-      }
-
-      if (newPage > currentPage) {
-        direction.value = Direction.left;
-      }
-      if (newPage < currentPage) {
-        direction.value = Direction.right;
-      }
-
-      controller.animateTo(1, duration: Duration(milliseconds: 150));
-    });
-  }
-
-  void setPage(int page) {
-    widget.pageNotifier.value = page;
-    setState(() => currentPage = page);
   }
 
   @override
   void didUpdateWidget(CustomPageView old) {
     super.didUpdateWidget(old);
     if (widget.children != old.children) {
+      widget.controller.pages = widget.children.length;
       children = widget.children.map((c) => RepaintBoundary(child: c)).toList();
     }
-  }
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
   }
 
   @override
@@ -252,40 +209,44 @@ class _CustomPageViewState extends State<CustomPageView> with SingleTickerProvid
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
-      onHorizontalDragStart: (_) => direction.value = null,
+      onHorizontalDragStart: (_) => widget.controller.direction.value = null,
       onHorizontalDragUpdate: (details) {
-        if (direction.value == null) {
-          direction.value = details.delta.dx < 0 ? Direction.left : Direction.right;
-        }
-        if (direction.value == Direction.right) {
-          controller.value += details.delta.dx / maxWidth;
+        widget.controller.direction.value ??= details.delta.dx < 0 ? Direction.left : Direction.right;
+        if (widget.controller.direction.value == Direction.right) {
+          widget.controller.animationController.value += details.delta.dx / maxWidth;
         } else {
-          controller.value -= details.delta.dx / maxWidth;
+          widget.controller.animationController.value -= details.delta.dx / maxWidth;
         }
       },
       onHorizontalDragEnd: (_) {
-        if (currentPage == 0 && direction.value == Direction.right) {
-          controller.animateTo(0, duration: Duration(milliseconds: 300));
+        int pageTime = 200;
+        int timeLeft = ((1 - widget.controller.animationController.value) * pageTime).round();
+        if (currentPage == 0 && widget.controller.direction.value == Direction.right) {
+          widget.controller.animationController.animateTo(
+            0,
+            duration: Duration(milliseconds: timeLeft),
+            curve: Curves.bounceIn,
+          );
           return;
         }
-        if (currentPage == children.length - 1 && direction.value == Direction.left) {
-          controller.animateTo(0, duration: Duration(milliseconds: 300));
+        if (currentPage >= children.length - 1 && widget.controller.direction.value == Direction.left) {
+          widget.controller.animationController.animateTo(
+            0,
+            duration: Duration(milliseconds: timeLeft),
+            curve: Curves.bounceIn,
+          );
           return;
         }
-        int timeLeft = 300 - (300 * controller.value).toInt();
-        if (controller.value > 0.3) {
-          controller.animateTo(1, duration: Duration(milliseconds: timeLeft));
-        } else {
-          controller.animateTo(0, duration: Duration(milliseconds: timeLeft));
-        }
+
+        widget.controller.direction.value == Direction.left ? widget.controller.next() : widget.controller.previous();
       },
       child: AnimatedBuilder(
-        animation: controller,
+        animation: widget.controller.animationController,
         child: CustomPage(
           width: widget.constraints.maxWidth,
           height: widget.constraints.maxHeight,
-          directionNotifier: direction,
-          controller: controller,
+          directionNotifier: widget.controller.direction,
+          controller: widget.controller.animationController,
           currentPage: currentPage,
           children: children,
         ),

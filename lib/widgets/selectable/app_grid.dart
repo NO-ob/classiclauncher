@@ -9,6 +9,7 @@ import 'package:classiclauncher/models/enums.dart';
 import 'package:classiclauncher/models/key_press.dart';
 import 'package:classiclauncher/models/theme/app_grid_theme.dart';
 import 'package:classiclauncher/models/theme/launcher_theme.dart';
+import 'package:classiclauncher/utils/custom_page_controller.dart';
 import 'package:classiclauncher/widgets/app_drag_overlay.dart';
 import 'package:classiclauncher/widgets/app_page.dart';
 import 'package:classiclauncher/widgets/custom_page_view.dart';
@@ -26,7 +27,7 @@ class AppGrid extends StatefulWidget {
   State<AppGrid> createState() => _AppGridState();
 }
 
-class _AppGridState extends State<AppGrid> with SingleTickerProviderStateMixin implements SelectableZone {
+class _AppGridState extends State<AppGrid> with TickerProviderStateMixin implements SelectableZone {
   SelectableController? controller;
   AppHandler appHandler = Get.find<AppHandler>();
   ThemeHandler themeHandler = Get.find<ThemeHandler>();
@@ -50,6 +51,7 @@ class _AppGridState extends State<AppGrid> with SingleTickerProviderStateMixin i
     launcherTheme = themeHandler.theme.value;
     installedApps = appHandler.installedApps.toList();
     appGridHandler.initAnimation(this);
+    appGridHandler.customPageController = Rx(CustomPageController(vsync: this));
 
     installedAppsSub = appHandler.installedApps.listen((newApps) {
       if (!mounted) {
@@ -95,7 +97,7 @@ class _AppGridState extends State<AppGrid> with SingleTickerProviderStateMixin i
     int localIndex = currentIndex % appsPerPage;
     int currentRow = localIndex ~/ columns;
     int currentCol = localIndex % columns;
-    int currentPage = appGridHandler.pageNotifier.value;
+    int currentPage = appGridHandler.customPageController.value!.currentPage.value;
     int indexPage = currentIndex ~/ appsPerPage;
 
     bool isTopEdge = currentRow == 0;
@@ -202,7 +204,7 @@ class _AppGridState extends State<AppGrid> with SingleTickerProviderStateMixin i
   }
 
   void scrollToPage(int index) async {
-    appGridHandler.pageNotifier.value = index;
+    appGridHandler.customPageController.value?.animateTo(index, duration: Duration(milliseconds: 100), curve: Curves.bounceIn);
   }
 
   @override
@@ -278,11 +280,11 @@ class _AppGridState extends State<AppGrid> with SingleTickerProviderStateMixin i
             }
 
             if (appGridHandler.fingerX.value! < zoneWidth) {
-              appGridHandler.pageNotifier.value--;
+              appGridHandler.customPageController.value?.previous(duration: Duration(milliseconds: 50), curve: Curves.easeInOut);
             }
 
             if (appGridHandler.fingerX.value! > (widget.constraints.maxWidth - zoneWidth)) {
-              appGridHandler.pageNotifier.value++;
+              appGridHandler.customPageController.value?.next(duration: Duration(milliseconds: 50), curve: Curves.easeInOut);
             }
 
             appGridHandler.pageChangeEdgeTimer.value = null;
@@ -291,12 +293,22 @@ class _AppGridState extends State<AppGrid> with SingleTickerProviderStateMixin i
           appGridHandler.clearTimer();
         }
       },
-      child: Stack(
-        children: [
-          AppDragOverlay(width: widget.constraints.maxWidth, height: widget.constraints.maxHeight),
-          CustomPageView(constraints: widget.constraints, pageNotifier: appGridHandler.pageNotifier, children: pages),
-        ],
-      ),
+      child: appGridHandler.swipableFadeController != null
+          ? AnimatedBuilder(
+              animation: appGridHandler.swipableFadeController!,
+              builder: (context, _) {
+                return Transform.scale(
+                  scale: 1 - (0.1 * appGridHandler.swipableFadeController!.value),
+                  child: Stack(
+                    children: [
+                      AppDragOverlay(width: widget.constraints.maxWidth, height: widget.constraints.maxHeight),
+                      CustomPageView(constraints: widget.constraints, controller: appGridHandler.customPageController.value!, children: pages),
+                    ],
+                  ),
+                );
+              },
+            )
+          : SizedBox.shrink(),
     );
   }
 

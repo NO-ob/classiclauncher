@@ -17,6 +17,7 @@ import 'package:classiclauncher/widgets/selectable/selectable_controller.dart';
 import 'package:classiclauncher/widgets/selectable/app_grid.dart';
 import 'package:classiclauncher/widgets/selectable/selectable_list.dart';
 import 'package:classiclauncher/widgets/shadowed_image.dart';
+import 'package:classiclauncher/widgets/swipable_page_indicators.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' hide Selectable;
 import 'package:get/get.dart';
@@ -98,6 +99,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Selectable(
                   controller: controller,
                   child: SelectableList.builder(
+                    onStart: () {
+                      appGridHandler.customPageController.value?.previous();
+                    },
+                    onEnd: () {
+                      appGridHandler.customPageController.value?.next();
+                    },
                     zoneIndex: 1,
                     childCount: 3,
                     zoneKey: "NavRow",
@@ -133,22 +140,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             child: SelectableContainer(
                               selectableKey: "${key}_$index",
                               selectorTheme: themeHandler.theme.value.appGridTheme.selectorTheme,
-                              child: SizedBox(
-                                height: themeHandler.theme.value.navBarTheme.navBarHeight,
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Obx(() {
-                                      int pageCount =
-                                          (appHandler.installedApps.length /
-                                                  (themeHandler.theme.value.appGridTheme.rows * themeHandler.theme.value.appGridTheme.columns))
-                                              .ceil();
-                                      return PageIndicators(selected: appGridHandler.pageNotifier, pageCount: pageCount);
-                                    }),
-                                  ],
-                                ),
-                              ),
+                              child: SwipablePageIndicators(),
                             ),
                           );
 

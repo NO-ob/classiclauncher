@@ -11,7 +11,14 @@
             "args": []
         },
         {
-            "name": "classicLauncher",
+            "name": "classicLauncher release",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release",
+            "args": []
+        },
+        {
+            "name": "classicLauncher profile",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile",

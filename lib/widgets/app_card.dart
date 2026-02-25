@@ -57,7 +57,7 @@ class _AppCardState extends State<AppCard> with AutomaticKeepAliveClientMixin {
 
     int appsPerPage = themeHandler.theme.value.appGridTheme.appsPerPage;
 
-    int pageStart = 0 + (appsPerPage * appGridHandler.pageNotifier.value);
+    int pageStart = 0 + appsPerPage * (appGridHandler.customPageController.value!.currentPage.value);
 
     int offset = (appGridHandler.appMoveRow! * themeHandler.theme.value.appGridTheme.columns) + appGridHandler.appMoveCol!;
 

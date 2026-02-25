@@ -11,8 +11,10 @@ class SelectableList extends StatefulWidget {
   final String zoneKey;
   final List<Widget> children;
   final int? zoneIndex;
+  final void Function()? onStart;
+  final void Function()? onEnd;
 
-  const SelectableList._internal({super.key, required this.axis, required this.zoneKey, required this.children, this.zoneIndex});
+  const SelectableList._internal({super.key, required this.axis, required this.zoneKey, required this.children, this.zoneIndex, this.onStart, this.onEnd});
 
   factory SelectableList({
     Key? key,
@@ -21,13 +23,15 @@ class SelectableList extends StatefulWidget {
     required List<Widget> children,
     int? zoneIndex,
     required SelectorTheme selectorTheme,
+    void Function()? onStart,
+    void Function()? onEnd,
   }) {
     List<Widget> selectableChildren = List<Widget>.generate(
       children.length,
       (i) => SelectableContainer(selectableKey: '${zoneKey}_$i', selectorTheme: selectorTheme, child: children[i]),
     );
 
-    return SelectableList._internal(key: key, axis: axis, zoneKey: zoneKey, zoneIndex: zoneIndex, children: selectableChildren);
+    return SelectableList._internal(key: key, axis: axis, zoneKey: zoneKey, zoneIndex: zoneIndex, onEnd: onEnd, onStart: onStart, children: selectableChildren);
   }
 
   factory SelectableList.builder({
@@ -37,10 +41,12 @@ class SelectableList extends StatefulWidget {
     required int childCount,
     required Widget Function(int index, String key) childBuilder,
     int? zoneIndex,
+    void Function()? onStart,
+    void Function()? onEnd,
   }) {
     final children = List<Widget>.generate(childCount, (i) => childBuilder(i, zoneKey));
 
-    return SelectableList._internal(key: key, axis: axis, zoneKey: zoneKey, children: children);
+    return SelectableList._internal(key: key, axis: axis, zoneKey: zoneKey, onEnd: onEnd, onStart: onStart, children: children);
   }
 
   @override
@@ -71,11 +77,18 @@ class _SelectableListState extends State<SelectableList> implements SelectableZo
     if (direction != nextDirection && direction != prevDirection) {
       return -1;
     }
+
     if (direction == prevDirection && currentIndex == 0) {
+      if (moveType == MoveType.hard) {
+        widget.onStart?.call();
+      }
       return -1;
     }
 
     if (direction == nextDirection && currentIndex >= widget.children.length - 1) {
+      if (moveType == MoveType.hard) {
+        widget.onEnd?.call();
+      }
       return -1;
     }
 

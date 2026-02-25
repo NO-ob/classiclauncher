@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:classiclauncher/models/app_info.dart';
 import 'package:classiclauncher/models/key_press.dart';
 import 'package:classiclauncher/selection/key_input_handler.dart';
+import 'package:classiclauncher/utils/custom_page_controller.dart';
 import 'package:classiclauncher/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -20,8 +21,9 @@ class AppGridHandler extends GetxController {
   Rx<double?> fingerY = Rx(null);
   late AnimationController editingAnimationController;
   late Animation<double> editingScaleAnimation;
+  AnimationController? swipableFadeController;
 
-  ValueNotifier<int> pageNotifier = ValueNotifier(0);
+  Rx<CustomPageController?> customPageController = Rx(null);
 
   @override
   void onInit() {
