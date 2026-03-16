@@ -4,6 +4,7 @@ import 'package:classiclauncher/models/theme/app_grid_theme.dart';
 import 'package:classiclauncher/models/theme/nav_bar_theme.dart';
 import 'package:classiclauncher/models/theme/page_indicator_theme.dart';
 import 'package:classiclauncher/models/theme/settings_theme.dart';
+import 'package:classiclauncher/models/theme/text_field_theme.dart';
 import 'package:classiclauncher/models/theme/uninstall_button_theme.dart';
 import 'package:copy_with_extension/copy_with_extension.dart';
 import 'package:equatable/equatable.dart';
@@ -20,6 +21,7 @@ class LauncherTheme extends Equatable {
   final SettingsTheme settingsTheme;
   final NavBarTheme navBarTheme;
   final UninstallButtonTheme uninstallButtonTheme;
+  final TextFieldTheme appGridSearchBarTheme;
   const LauncherTheme({
     this.longPressActionDuration = const Duration(milliseconds: 800),
     this.appGridTheme = const AppGridTheme(),
@@ -27,6 +29,7 @@ class LauncherTheme extends Equatable {
     this.settingsTheme = const SettingsTheme(),
     this.navBarTheme = const NavBarTheme(),
     this.uninstallButtonTheme = const UninstallButtonTheme(),
+    this.appGridSearchBarTheme = const TextFieldTheme(),
   });
 
   /// Connect the generated [_$LauncherThemeFromJson] function to the `fromJson`

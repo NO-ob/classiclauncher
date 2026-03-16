@@ -119,12 +119,12 @@ UninstallButtonTheme _$UninstallButtonThemeFromJson(
   Map<String, dynamic> json,
 ) => UninstallButtonTheme(
   uninstallButtonColour: json['uninstallButtonColour'] == null
-      ? Colors.black26
+      ? Colors.black54
       : const ColourConverter().fromJson(
           json['uninstallButtonColour'] as String,
         ),
   uninstallButtonBorderColour: json['uninstallButtonBorderColour'] == null
-      ? Colors.white24
+      ? Colors.white54
       : const ColourConverter().fromJson(
           json['uninstallButtonBorderColour'] as String,
         ),
@@ -133,7 +133,7 @@ UninstallButtonTheme _$UninstallButtonThemeFromJson(
       : const ColourConverter().fromJson(
           json['uninstallButtonIconColour'] as String,
         ),
-  uninstallButtonSize: (json['uninstallButtonSize'] as num?)?.toDouble() ?? 22,
+  uninstallButtonSize: (json['uninstallButtonSize'] as num?)?.toDouble() ?? 32,
 );
 
 Map<String, dynamic> _$UninstallButtonThemeToJson(
@@ -158,7 +158,7 @@ const _$UninstallButtonThemeJsonSchema = {
     'uninstallButtonColour': {r'$ref': r'#/$defs/Color'},
     'uninstallButtonBorderColour': {r'$ref': r'#/$defs/Color'},
     'uninstallButtonIconColour': {r'$ref': r'#/$defs/Color'},
-    'uninstallButtonSize': {'type': 'number', 'default': 22.0},
+    'uninstallButtonSize': {'type': 'number', 'default': 32.0},
   },
   r'$defs': {
     'Color': {

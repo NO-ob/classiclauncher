@@ -37,7 +37,7 @@ class PageIndicatorTheme extends Equatable {
     this.pageIndicatorActiveSize = 22,
     this.pageIndicatorSpacing = 28,
     this.pageIndicatorFontSize = 14,
-    this.pageIndicatorTextColour = Colors.pink,
+    this.pageIndicatorTextColour = Colors.black,
     this.indicatorShape = IndicatorShape.circle,
     this.pageIndicatorColour = const Color(0xFFe6e6e6),
     this.pageIndicatorSwipeDotColour = const Color(0xBF000000),

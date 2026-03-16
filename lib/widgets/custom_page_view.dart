@@ -221,7 +221,7 @@ class _CustomPageViewState extends State<CustomPageView> with SingleTickerProvid
       onHorizontalDragEnd: (_) {
         int pageTime = 200;
         int timeLeft = ((1 - widget.controller.animationController.value) * pageTime).round();
-        if (currentPage == 0 && widget.controller.direction.value == Direction.right) {
+        if (currentPage <= 0 && widget.controller.direction.value == Direction.right) {
           widget.controller.animationController.animateTo(
             0,
             duration: Duration(milliseconds: timeLeft),
@@ -230,6 +230,15 @@ class _CustomPageViewState extends State<CustomPageView> with SingleTickerProvid
           return;
         }
         if (currentPage >= children.length - 1 && widget.controller.direction.value == Direction.left) {
+          widget.controller.animationController.animateTo(
+            0,
+            duration: Duration(milliseconds: timeLeft),
+            curve: Curves.bounceIn,
+          );
+          return;
+        }
+
+        if (widget.controller.animationController.value < 0.2) {
           widget.controller.animationController.animateTo(
             0,
             duration: Duration(milliseconds: timeLeft),

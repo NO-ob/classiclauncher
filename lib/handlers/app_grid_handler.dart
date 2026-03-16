@@ -5,6 +5,7 @@ import 'package:classiclauncher/models/key_press.dart';
 import 'package:classiclauncher/selection/key_input_handler.dart';
 import 'package:classiclauncher/utils/custom_page_controller.dart';
 import 'package:classiclauncher/utils/logger.dart';
+import 'package:classiclauncher/widgets/selectable/selectable_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -22,6 +23,7 @@ class AppGridHandler extends GetxController {
   late AnimationController editingAnimationController;
   late Animation<double> editingScaleAnimation;
   AnimationController? swipableFadeController;
+  SelectableTextController textController = SelectableTextController();
 
   Rx<CustomPageController?> customPageController = Rx(null);
 

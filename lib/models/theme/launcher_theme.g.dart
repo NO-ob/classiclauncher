@@ -19,6 +19,8 @@ abstract class _$LauncherThemeCWProxy {
 
   LauncherTheme uninstallButtonTheme(UninstallButtonTheme uninstallButtonTheme);
 
+  LauncherTheme appGridSearchBarTheme(TextFieldTheme appGridSearchBarTheme);
+
   /// Creates a new instance with the provided field values.
   /// Passing `null` to a nullable field nullifies it, while `null` for a non-nullable field is ignored. To update a single field use `LauncherTheme(...).copyWith.fieldName(value)`.
   ///
@@ -33,6 +35,7 @@ abstract class _$LauncherThemeCWProxy {
     SettingsTheme settingsTheme,
     NavBarTheme navBarTheme,
     UninstallButtonTheme uninstallButtonTheme,
+    TextFieldTheme appGridSearchBarTheme,
   });
 }
 
@@ -69,6 +72,10 @@ class _$LauncherThemeCWProxyImpl implements _$LauncherThemeCWProxy {
   ) => call(uninstallButtonTheme: uninstallButtonTheme);
 
   @override
+  LauncherTheme appGridSearchBarTheme(TextFieldTheme appGridSearchBarTheme) =>
+      call(appGridSearchBarTheme: appGridSearchBarTheme);
+
+  @override
   /// Creates a new instance with the provided field values.
   /// Passing `null` to a nullable field nullifies it, while `null` for a non-nullable field is ignored. To update a single field use `LauncherTheme(...).copyWith.fieldName(value)`.
   ///
@@ -83,6 +90,7 @@ class _$LauncherThemeCWProxyImpl implements _$LauncherThemeCWProxy {
     Object? settingsTheme = const $CopyWithPlaceholder(),
     Object? navBarTheme = const $CopyWithPlaceholder(),
     Object? uninstallButtonTheme = const $CopyWithPlaceholder(),
+    Object? appGridSearchBarTheme = const $CopyWithPlaceholder(),
   }) {
     return LauncherTheme(
       longPressActionDuration:
@@ -118,6 +126,12 @@ class _$LauncherThemeCWProxyImpl implements _$LauncherThemeCWProxy {
           ? _value.uninstallButtonTheme
           // ignore: cast_nullable_to_non_nullable
           : uninstallButtonTheme as UninstallButtonTheme,
+      appGridSearchBarTheme:
+          appGridSearchBarTheme == const $CopyWithPlaceholder() ||
+              appGridSearchBarTheme == null
+          ? _value.appGridSearchBarTheme
+          // ignore: cast_nullable_to_non_nullable
+          : appGridSearchBarTheme as TextFieldTheme,
     );
   }
 }
@@ -161,6 +175,11 @@ LauncherTheme _$LauncherThemeFromJson(Map<String, dynamic> json) =>
           : UninstallButtonTheme.fromJson(
               json['uninstallButtonTheme'] as Map<String, dynamic>,
             ),
+      appGridSearchBarTheme: json['appGridSearchBarTheme'] == null
+          ? const TextFieldTheme()
+          : TextFieldTheme.fromJson(
+              json['appGridSearchBarTheme'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$LauncherThemeToJson(
@@ -172,6 +191,7 @@ Map<String, dynamic> _$LauncherThemeToJson(
   'settingsTheme': instance.settingsTheme,
   'navBarTheme': instance.navBarTheme,
   'uninstallButtonTheme': instance.uninstallButtonTheme,
+  'appGridSearchBarTheme': instance.appGridSearchBarTheme,
 };
 
 const _$LauncherThemeJsonSchema = {
@@ -184,9 +204,11 @@ const _$LauncherThemeJsonSchema = {
     'settingsTheme': {r'$ref': r'#/$defs/SettingsTheme'},
     'navBarTheme': {r'$ref': r'#/$defs/NavBarTheme'},
     'uninstallButtonTheme': {r'$ref': r'#/$defs/UninstallButtonTheme'},
+    'appGridSearchBarTheme': {r'$ref': r'#/$defs/TextFieldTheme'},
   },
   r'$defs': {
     'Duration': {'type': 'object', 'properties': {}},
+    'EdgeInsets': {'type': 'object', 'properties': {}},
     'Color': {
       'type': 'object',
       'properties': {
@@ -194,7 +216,6 @@ const _$LauncherThemeJsonSchema = {
       },
       'required': ['value'],
     },
-    'EdgeInsets': {'type': 'object', 'properties': {}},
     'SelectorTheme': {
       'type': 'object',
       'properties': {
@@ -234,6 +255,7 @@ const _$LauncherThemeJsonSchema = {
         'rows': {'type': 'integer', 'default': 3},
         'iconSize': {'type': 'number', 'default': 68.0},
         'appCardFontSize': {'type': 'number', 'default': 18.0},
+        'appCardTextPadding': {r'$ref': r'#/$defs/EdgeInsets'},
         'appCardTextOutlineColour': {r'$ref': r'#/$defs/Color'},
         'appGridOutterPadding': {r'$ref': r'#/$defs/EdgeInsets'},
         'appCardIconPadding': {r'$ref': r'#/$defs/EdgeInsets'},
@@ -258,6 +280,16 @@ const _$LauncherThemeJsonSchema = {
         'pageIndicatorTextColour': {r'$ref': r'#/$defs/Color'},
         'indicatorShape': {'type': 'object'},
         'pageIndicatorColour': {r'$ref': r'#/$defs/Color'},
+        'pageIndicatorSwipeDotColour': {r'$ref': r'#/$defs/Color'},
+        'pageIndicatorSwipeDotTextColour': {r'$ref': r'#/$defs/Color'},
+        'pageIndicatorSwipeDotTextTopPadding': {
+          'type': 'number',
+          'default': 5.0,
+        },
+        'pageIndicatorSwipeBackgroundColour': {r'$ref': r'#/$defs/Color'},
+        'pageIndicatorSwipeDotFontSize': {'type': 'number', 'default': 32.0},
+        'pageIndicatorSwipeDotSize': {'type': 'number', 'default': 48.0},
+        'pageIndicatorSwipeDotXOffset': {'type': 'number', 'default': 28.0},
       },
     },
     'SettingsTheme': {
@@ -289,7 +321,26 @@ const _$LauncherThemeJsonSchema = {
         'uninstallButtonColour': {r'$ref': r'#/$defs/Color'},
         'uninstallButtonBorderColour': {r'$ref': r'#/$defs/Color'},
         'uninstallButtonIconColour': {r'$ref': r'#/$defs/Color'},
-        'uninstallButtonSize': {'type': 'number', 'default': 22.0},
+        'uninstallButtonSize': {'type': 'number', 'default': 32.0},
+      },
+    },
+    'TextFieldTheme': {
+      'type': 'object',
+      'properties': {
+        'fontSize': {'type': 'number', 'default': 20.0},
+        'textColour': {r'$ref': r'#/$defs/Color'},
+        'textPadding': {r'$ref': r'#/$defs/EdgeInsets'},
+        'letterPadding': {r'$ref': r'#/$defs/EdgeInsets'},
+        'textFieldPadding': {r'$ref': r'#/$defs/EdgeInsets'},
+        'textFieldHeight': {'type': 'number', 'default': 44.0},
+        'backgroundColour': {r'$ref': r'#/$defs/Color'},
+        'iconPadding': {r'$ref': r'#/$defs/EdgeInsets'},
+        'iconSize': {'type': 'number', 'default': 28.0},
+        'iconColour': {r'$ref': r'#/$defs/Color'},
+        'cursorColour': {r'$ref': r'#/$defs/Color'},
+        'cursorWidth': {'type': 'number', 'default': 3.0},
+        'cursorHeight': {'type': 'number', 'default': 30.0},
+        'selectorTheme': {r'$ref': r'#/$defs/SelectorTheme'},
       },
     },
   },

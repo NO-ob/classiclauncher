@@ -1,11 +1,7 @@
-import 'dart:async';
-import 'dart:ui';
-
 import 'package:classiclauncher/handlers/app_grid_handler.dart';
 import 'package:classiclauncher/handlers/app_handler.dart';
 import 'package:classiclauncher/models/app_info.dart';
 import 'package:classiclauncher/handlers/theme_handler.dart';
-import 'package:classiclauncher/screens/select_gesture_detector.dart';
 import 'package:classiclauncher/screens/selectable_container.dart';
 import 'package:classiclauncher/utils/launcher_utils.dart';
 import 'package:classiclauncher/utils/logger.dart';
@@ -125,19 +121,23 @@ class _AppCardState extends State<AppCard> with AutomaticKeepAliveClientMixin {
       child: AnimatedBuilder(
         animation: appGridHandler.editingAnimationController,
         builder: (_, __) {
+          int appIndex = appHandler.filteredApps.value == null
+              ? appHandler.installedApps.indexOf(widget.appInfo)
+              : appHandler.filteredApps.value!.indexOf(widget.appInfo);
+
           return Transform.scale(
             scale: appGridHandler.editingScaleAnimation.value,
             child: Stack(
               children: [
                 Container(
-                  key: ValueKey("AppCard::${widget.appInfo.packageName}::${widget.width}::${widget.height}${appHandler.installedApps.indexOf(widget.appInfo)}"),
+                  key: ValueKey("AppCard::${widget.appInfo.packageName}::${widget.width}::${widget.height}$appIndex"),
                   width: widget.width,
                   height: widget.height,
                   decoration: (appGridHandler.moving.value == widget.appInfo && appGridHandler.editing.value && appGridHandler.dragging.value)
                       ? null
                       : themeHandler.theme.value.appGridTheme.appCardDecoration,
                   child: SelectableContainer(
-                    selectableKey: "${widget.selectableKey}_${appHandler.installedApps.indexOf(widget.appInfo)}",
+                    selectableKey: "${widget.selectableKey}_$appIndex",
                     selectorTheme: themeHandler.theme.value.appGridTheme.selectorTheme,
                     canLongPress: () {
                       return !appGridHandler.editing.value;
@@ -182,7 +182,17 @@ class _AppCardState extends State<AppCard> with AutomaticKeepAliveClientMixin {
                               ),
                             ),
                           ),
-                          Text(widget.appInfo.title, textAlign: TextAlign.center, style: themeHandler.theme.value.appGridTheme.appCardTextStyle),
+                          Expanded(
+                            child: Padding(
+                              padding: themeHandler.theme.value.appGridTheme.appCardTextPadding,
+                              child: Text(
+                                widget.appInfo.title,
+                                textAlign: TextAlign.center,
+                                style: themeHandler.theme.value.appGridTheme.appCardTextStyle,
+                                overflow: TextOverflow.fade,
+                              ),
+                            ),
+                          ),
                         ],
                       );
                     }),

@@ -14,6 +14,8 @@ class AppGridTheme extends Equatable {
   final int rows;
   final double iconSize;
   final double appCardFontSize;
+  @EdgeInsetsConverter()
+  final EdgeInsets appCardTextPadding;
   @ColourConverter()
   final Color appCardTextOutlineColour;
   @EdgeInsetsConverter()
@@ -50,6 +52,7 @@ class AppGridTheme extends Equatable {
     this.appCardGradient,
     this.cornerRadius = 0,
     this.selectorTheme = const SelectorTheme(),
+    this.appCardTextPadding = const EdgeInsets.only(bottom: 4, left: 4, right: 4),
   });
 
   double get gridOutterSideSize => appGridOutterPadding.left + appGridOutterPadding.right;

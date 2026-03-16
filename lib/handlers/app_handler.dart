@@ -14,6 +14,7 @@ import 'package:get/get.dart';
 class AppHandler extends GetxController {
   static const MethodChannel methodChannel = MethodChannel('com.noaisu.classicLauncher/app');
   RxList<AppInfo> installedApps = RxList();
+  Rx<List<AppInfo>?> filteredApps = Rx(null);
   RxMap<String, Uint8List> appIcons = RxMap();
   RxMap<String, Uint8List> customAppIcons = RxMap();
   RxList<String> appPositions = RxList();

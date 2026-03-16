@@ -28,8 +28,9 @@ class SelectableController {
   RxMap<int, Timer> heldInputs = RxMap();
   List<int> cancelRelease = [];
   String route;
+  void Function(KeyPress keyPress)? textInputCallback;
 
-  SelectableController({required this.route}) {
+  SelectableController({required this.route, this.textInputCallback}) {
     inputSub = Get.find<KeyInputHandler>().keyStream.listen((keyPress) {
       if (Get.currentRoute != route) {
         return;
@@ -68,9 +69,18 @@ class SelectableController {
         return;
       }
 
+      // text input callback
+      // fucntion called, setstate in aprents, hide navbar, show textfield
+
+      // Call fucnrtion + notify
+
       inputNotifier.value = keyPress;
 
       Logger().log(location: "SelectableController", message: "input announced $keyPress");
+
+      if (keyPress.input != Input.select) {
+        textInputCallback?.call(keyPress);
+      }
       return;
     });
   }
@@ -137,6 +147,7 @@ class SelectableController {
 
   void unregisterZone(SelectableZone zone) {
     zones.remove(zone);
+    zoneIndex = 0;
   }
 
   void handleMove(Direction direction, MoveType moveType) {

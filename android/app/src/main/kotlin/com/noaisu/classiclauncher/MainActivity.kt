@@ -531,7 +531,7 @@ private fun PackageManager.getInstalledPackagesCompat(flags: Long = 0L): List<Pa
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
         val keyInfo = mapOf(
             "keyCode" to keyCode,
-            "keyLabel" to event.displayLabel.toString(),
+            "char" to if (event.unicodeChar != 0) String(Character.toChars(event.unicodeChar)) else null,
             "state" to "keyup"
         )
         eventSink?.success(keyInfo)
@@ -541,7 +541,7 @@ private fun PackageManager.getInstalledPackagesCompat(flags: Long = 0L): List<Pa
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         val keyInfo = mapOf(
             "keyCode" to keyCode,
-            "keyLabel" to event.displayLabel.toString(),
+            "char" to if (event.unicodeChar != 0) String(Character.toChars(event.unicodeChar)) else null,
             "state" to "keydown"
         )
         eventSink?.success(keyInfo)

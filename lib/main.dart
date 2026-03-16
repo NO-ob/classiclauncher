@@ -5,6 +5,7 @@ import 'package:classiclauncher/handlers/app_handler.dart';
 import 'package:classiclauncher/handlers/config_handler.dart';
 import 'package:classiclauncher/handlers/theme_handler.dart';
 import 'package:classiclauncher/models/app_info.dart';
+import 'package:classiclauncher/models/key_press.dart';
 import 'package:classiclauncher/models/theme/app_grid_theme.dart';
 import 'package:classiclauncher/screens/selectable_container.dart';
 import 'package:classiclauncher/selection/key_input_handler.dart';
@@ -16,6 +17,7 @@ import 'package:classiclauncher/widgets/selectable/selectable.dart';
 import 'package:classiclauncher/widgets/selectable/selectable_controller.dart';
 import 'package:classiclauncher/widgets/selectable/app_grid.dart';
 import 'package:classiclauncher/widgets/selectable/selectable_list.dart';
+import 'package:classiclauncher/widgets/selectable/selectable_text_field.dart';
 import 'package:classiclauncher/widgets/shadowed_image.dart';
 import 'package:classiclauncher/widgets/swipable_page_indicators.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +30,7 @@ void main() {
   Get.put(AppHandler(), permanent: true);
   Get.put(ThemeHandler(), permanent: true);
   Get.put(AppGridHandler(), permanent: true);
+
   runApp(const MyApp());
 }
 
@@ -55,8 +58,9 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final AppHandler appHandler = Get.find<AppHandler>();
   final ThemeHandler themeHandler = Get.find<ThemeHandler>();
-  final SelectableController controller = SelectableController(route: "/");
+  late SelectableController controller;
   final AppGridHandler appGridHandler = Get.find<AppGridHandler>();
+  bool displayTextInputField = false;
 
   List<List<T>> splitList<T>(List<T> list, int countPerSplit) {
     if (countPerSplit <= 0) {
@@ -72,6 +76,57 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   @override
+  void initState() {
+    controller = SelectableController(
+      route: "/",
+      textInputCallback: (KeyPress keyPress) {
+        if (!mounted) {
+          return;
+        }
+
+        bool hasChar = keyPress.hasChar;
+
+        if (!displayTextInputField && appGridHandler.textController.chars.isEmpty && hasChar) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            appGridHandler.textController.insert(keyPress.char!);
+          });
+          setState(() {
+            displayTextInputField = true;
+          });
+        }
+      },
+    );
+
+    appGridHandler.textController.addListener(textListener);
+
+    super.initState();
+  }
+
+  void textListener() {
+    if (!mounted) {
+      return;
+    }
+    if (appGridHandler.textController.chars.isEmpty) {
+      setState(() {
+        displayTextInputField = false;
+      });
+      return;
+    }
+
+    if (appGridHandler.textController.chars.isNotEmpty && !displayTextInputField) {
+      setState(() {
+        displayTextInputField = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    appGridHandler.textController.removeListener(textListener);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -81,98 +136,111 @@ class _MyHomePageState extends State<MyHomePage> {
         return SizedBox(
           width: Get.width,
           height: Get.height,
-          child: Column(
+          child: Stack(
             children: [
-              SizedBox(height: 32),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (BuildContext context, BoxConstraints constraints) {
-                    return Selectable(
-                      controller: controller,
-                      child: AppGrid(constraints: constraints),
-                    );
-                  },
-                ),
-              ),
-              SizedBox(
-                height: themeHandler.theme.value.navBarTheme.navBarHeight,
-                child: Selectable(
-                  controller: controller,
-                  child: SelectableList.builder(
-                    onStart: () {
-                      appGridHandler.customPageController.value?.previous();
-                    },
-                    onEnd: () {
-                      appGridHandler.customPageController.value?.next();
-                    },
-                    zoneIndex: 1,
-                    childCount: 3,
-                    zoneKey: "NavRow",
-                    axis: Axis.horizontal,
-                    childBuilder: (index, key) {
-                      switch (index) {
-                        case 0:
-                          return Padding(
-                            padding: EdgeInsetsGeometry.only(
-                              left: themeHandler.theme.value.navBarTheme.navBarSpacing,
-                              right: themeHandler.theme.value.navBarTheme.navBarSpacing,
-                            ),
-                            child: SelectableContainer(
-                              selectableKey: "${key}_$index",
-                              selectorTheme: themeHandler.theme.value.appGridTheme.selectorTheme,
-                              onTap: () {
-                                appHandler.launchMail();
-                              },
-                              child: SizedBox(
-                                height: themeHandler.theme.value.navBarTheme.navBarHeight,
-                                width: themeHandler.theme.value.navBarTheme.navBarHeight,
-                                child: ShadowedImage(
-                                  width: themeHandler.theme.value.navBarTheme.navBarIconSize,
-                                  height: themeHandler.theme.value.navBarTheme.navBarIconSize,
-                                  colour: themeHandler.theme.value.navBarTheme.iconColour,
-                                  assetPath: appHandler.loliSnatcher.value == null ? iconMessages : iconKanna2,
-                                ),
-                              ),
-                            ),
-                          );
-                        case 1:
-                          return Expanded(
-                            child: SelectableContainer(
-                              selectableKey: "${key}_$index",
-                              selectorTheme: themeHandler.theme.value.appGridTheme.selectorTheme,
-                              child: SwipablePageIndicators(),
-                            ),
-                          );
-
-                        case 2:
-                          return Padding(
-                            padding: EdgeInsetsGeometry.only(
-                              left: themeHandler.theme.value.navBarTheme.navBarSpacing,
-                              right: themeHandler.theme.value.navBarTheme.navBarSpacing,
-                            ),
-                            child: SelectableContainer(
-                              selectableKey: "${key}_$index",
-                              selectorTheme: themeHandler.theme.value.appGridTheme.selectorTheme,
-                              onTap: () {
-                                appHandler.launchCamera();
-                              },
-                              child: SizedBox(
-                                height: themeHandler.theme.value.navBarTheme.navBarHeight,
-                                width: themeHandler.theme.value.navBarTheme.navBarHeight,
-                                child: ShadowedImage(
-                                  width: themeHandler.theme.value.navBarTheme.navBarIconSize,
-                                  height: themeHandler.theme.value.navBarTheme.navBarIconSize,
-                                  colour: themeHandler.theme.value.navBarTheme.iconColour,
-                                  assetPath: iconCamera,
-                                ),
-                              ),
-                            ),
-                          );
-                      }
-                      return SizedBox.shrink();
-                    },
+              Column(
+                children: [
+                  SizedBox(height: 32),
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (BuildContext context, BoxConstraints constraints) {
+                        return Selectable(
+                          controller: controller,
+                          child: AppGrid(constraints: constraints),
+                        );
+                      },
+                    ),
                   ),
-                ),
+                  if (displayTextInputField)
+                    SizedBox(
+                      height: themeHandler.theme.value.navBarTheme.navBarHeight,
+                      child: Selectable(
+                        controller: controller,
+                        child: SelectableTextField(zoneKey: "SearchBar", textController: appGridHandler.textController),
+                      ),
+                    ),
+                  if (!displayTextInputField)
+                    SizedBox(
+                      height: themeHandler.theme.value.navBarTheme.navBarHeight,
+                      child: Selectable(
+                        controller: controller,
+                        child: SelectableList.builder(
+                          onStart: () {
+                            appGridHandler.customPageController.value?.previous();
+                          },
+                          onEnd: () {
+                            appGridHandler.customPageController.value?.next();
+                          },
+                          zoneIndex: 1,
+                          childCount: 3,
+                          zoneKey: "NavRow",
+                          axis: Axis.horizontal,
+                          childBuilder: (index, key) {
+                            switch (index) {
+                              case 0:
+                                return Padding(
+                                  padding: EdgeInsetsGeometry.only(
+                                    left: themeHandler.theme.value.navBarTheme.navBarSpacing,
+                                    right: themeHandler.theme.value.navBarTheme.navBarSpacing,
+                                  ),
+                                  child: SelectableContainer(
+                                    selectableKey: "${key}_$index",
+                                    selectorTheme: themeHandler.theme.value.appGridTheme.selectorTheme,
+                                    onTap: () {
+                                      appHandler.launchMail();
+                                    },
+                                    child: SizedBox(
+                                      height: themeHandler.theme.value.navBarTheme.navBarHeight,
+                                      width: themeHandler.theme.value.navBarTheme.navBarHeight,
+                                      child: ShadowedImage(
+                                        width: themeHandler.theme.value.navBarTheme.navBarIconSize,
+                                        height: themeHandler.theme.value.navBarTheme.navBarIconSize,
+                                        colour: themeHandler.theme.value.navBarTheme.iconColour,
+                                        assetPath: appHandler.loliSnatcher.value == null ? iconMessages : iconKanna2,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              case 1:
+                                return Expanded(
+                                  child: SelectableContainer(
+                                    selectableKey: "${key}_$index",
+                                    selectorTheme: themeHandler.theme.value.appGridTheme.selectorTheme,
+                                    child: SwipablePageIndicators(),
+                                  ),
+                                );
+
+                              case 2:
+                                return Padding(
+                                  padding: EdgeInsetsGeometry.only(
+                                    left: themeHandler.theme.value.navBarTheme.navBarSpacing,
+                                    right: themeHandler.theme.value.navBarTheme.navBarSpacing,
+                                  ),
+                                  child: SelectableContainer(
+                                    selectableKey: "${key}_$index",
+                                    selectorTheme: themeHandler.theme.value.appGridTheme.selectorTheme,
+                                    onTap: () {
+                                      appHandler.launchCamera();
+                                    },
+                                    child: SizedBox(
+                                      height: themeHandler.theme.value.navBarTheme.navBarHeight,
+                                      width: themeHandler.theme.value.navBarTheme.navBarHeight,
+                                      child: ShadowedImage(
+                                        width: themeHandler.theme.value.navBarTheme.navBarIconSize,
+                                        height: themeHandler.theme.value.navBarTheme.navBarIconSize,
+                                        colour: themeHandler.theme.value.navBarTheme.iconColour,
+                                        assetPath: iconCamera,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                            }
+                            return SizedBox.shrink();
+                          },
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),

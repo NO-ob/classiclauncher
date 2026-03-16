@@ -1,5 +1,5 @@
 name: classiclauncher
-description: "A launcher styled llike the blackberry classic home menu"
+description: "A launcher styled like the blackberry classic home menu"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+10
+version: 1.0.1+12
 
 environment:
   sdk: ^3.10.4
@@ -55,6 +55,7 @@ dev_dependencies:
   json_serializable: ^6.13.0
   build_runner: ^2.11.1
   copy_with_extension_gen: ^12.0.0
+  flutter_launcher_icons: "^0.14.4"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

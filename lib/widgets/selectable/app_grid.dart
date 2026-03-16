@@ -33,6 +33,7 @@ class _AppGridState extends State<AppGrid> with TickerProviderStateMixin impleme
   ThemeHandler themeHandler = Get.find<ThemeHandler>();
   AppGridHandler appGridHandler = Get.find<AppGridHandler>();
   List<AppInfo> installedApps = [];
+  List<AppInfo>? filteredApps;
 
   late Direction nextDirection;
   late Direction prevDirection;
@@ -62,7 +63,10 @@ class _AppGridState extends State<AppGrid> with TickerProviderStateMixin impleme
         return;
       }
       setState(() => installedApps = newApps.toList());
+      filterApps();
     });
+
+    appGridHandler.textController.addListener(filterApps);
 
     ever(themeHandler.theme, (LauncherTheme theme) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -85,9 +89,29 @@ class _AppGridState extends State<AppGrid> with TickerProviderStateMixin impleme
     super.initState();
   }
 
+  void filterApps() {
+    String text = appGridHandler.textController.text;
+    if (text.isNotEmpty) {
+      setState(() {
+        appGridHandler.customPageController.value?.jumpTo(0);
+
+        filteredApps = installedApps.where((AppInfo app) => app.packageName.toLowerCase().contains(text) || app.title.toLowerCase().contains(text)).toList();
+        appHandler.filteredApps.value = filteredApps;
+      });
+      return;
+    }
+
+    if (text.isEmpty) {
+      setState(() {
+        filteredApps = null;
+        appHandler.filteredApps.value = null;
+      });
+    }
+  }
+
   @override
   int handleMove(Direction direction, MoveType moveType) {
-    List<AppInfo> apps = appHandler.installedApps;
+    List<AppInfo> apps = filteredApps ?? installedApps;
 
     int columns = themeHandler.theme.value.appGridTheme.columns;
     int rows = themeHandler.theme.value.appGridTheme.rows;
@@ -211,6 +235,9 @@ class _AppGridState extends State<AppGrid> with TickerProviderStateMixin impleme
   void dispose() {
     controller?.unregisterZone(this);
     appGridHandler.editingAnimationController.dispose();
+    installedAppsSub.cancel();
+    appGridHandler.textController.removeListener(filterApps);
+
     super.dispose();
   }
 
@@ -235,11 +262,13 @@ class _AppGridState extends State<AppGrid> with TickerProviderStateMixin impleme
 
     List<Widget> pages = [];
 
-    for (int i = 0; i < (installedApps.length / appsPerPage).ceil(); i++) {
-      int start = i * themeHandler.theme.value.appGridTheme.appsPerPage;
-      int end = math.min(start + themeHandler.theme.value.appGridTheme.appsPerPage, appHandler.installedApps.length);
+    List<AppInfo> apps = filteredApps ?? installedApps;
 
-      List<AppInfo> pageApps = appHandler.installedApps.sublist(start, end);
+    for (int i = 0; i < (apps.length / appsPerPage).ceil(); i++) {
+      int start = i * themeHandler.theme.value.appGridTheme.appsPerPage;
+      int end = math.min(start + themeHandler.theme.value.appGridTheme.appsPerPage, apps.length);
+
+      List<AppInfo> pageApps = apps.sublist(start, end);
       pages.add(
         AppPage(
           key: ValueKey("AppGrid::page_$i"),

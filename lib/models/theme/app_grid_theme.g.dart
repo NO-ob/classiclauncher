@@ -39,6 +39,8 @@ abstract class _$AppGridThemeCWProxy {
 
   AppGridTheme selectorTheme(SelectorTheme selectorTheme);
 
+  AppGridTheme appCardTextPadding(EdgeInsets appCardTextPadding);
+
   /// Creates a new instance with the provided field values.
   /// Passing `null` to a nullable field nullifies it, while `null` for a non-nullable field is ignored. To update a single field use `AppGridTheme(...).copyWith.fieldName(value)`.
   ///
@@ -63,6 +65,7 @@ abstract class _$AppGridThemeCWProxy {
     Gradient? appCardGradient,
     double cornerRadius,
     SelectorTheme selectorTheme,
+    EdgeInsets appCardTextPadding,
   });
 }
 
@@ -134,6 +137,10 @@ class _$AppGridThemeCWProxyImpl implements _$AppGridThemeCWProxy {
       call(selectorTheme: selectorTheme);
 
   @override
+  AppGridTheme appCardTextPadding(EdgeInsets appCardTextPadding) =>
+      call(appCardTextPadding: appCardTextPadding);
+
+  @override
   /// Creates a new instance with the provided field values.
   /// Passing `null` to a nullable field nullifies it, while `null` for a non-nullable field is ignored. To update a single field use `AppGridTheme(...).copyWith.fieldName(value)`.
   ///
@@ -158,6 +165,7 @@ class _$AppGridThemeCWProxyImpl implements _$AppGridThemeCWProxy {
     Object? appCardGradient = const $CopyWithPlaceholder(),
     Object? cornerRadius = const $CopyWithPlaceholder(),
     Object? selectorTheme = const $CopyWithPlaceholder(),
+    Object? appCardTextPadding = const $CopyWithPlaceholder(),
   }) {
     return AppGridTheme(
       appCardFontSize:
@@ -241,6 +249,12 @@ class _$AppGridThemeCWProxyImpl implements _$AppGridThemeCWProxy {
           ? _value.selectorTheme
           // ignore: cast_nullable_to_non_nullable
           : selectorTheme as SelectorTheme,
+      appCardTextPadding:
+          appCardTextPadding == const $CopyWithPlaceholder() ||
+              appCardTextPadding == null
+          ? _value.appCardTextPadding
+          // ignore: cast_nullable_to_non_nullable
+          : appCardTextPadding as EdgeInsets,
     );
   }
 }
@@ -303,6 +317,11 @@ AppGridTheme _$AppGridThemeFromJson(Map<String, dynamic> json) => AppGridTheme(
   selectorTheme: json['selectorTheme'] == null
       ? const SelectorTheme()
       : SelectorTheme.fromJson(json['selectorTheme'] as Map<String, dynamic>),
+  appCardTextPadding: json['appCardTextPadding'] == null
+      ? const EdgeInsets.only(bottom: 4, left: 4, right: 4)
+      : const EdgeInsetsConverter().fromJson(
+          json['appCardTextPadding'] as Map<String, dynamic>,
+        ),
 );
 
 Map<String, dynamic> _$AppGridThemeToJson(
@@ -312,6 +331,9 @@ Map<String, dynamic> _$AppGridThemeToJson(
   'rows': instance.rows,
   'iconSize': instance.iconSize,
   'appCardFontSize': instance.appCardFontSize,
+  'appCardTextPadding': const EdgeInsetsConverter().toJson(
+    instance.appCardTextPadding,
+  ),
   'appCardTextOutlineColour': const ColourConverter().toJson(
     instance.appCardTextOutlineColour,
   ),
@@ -349,6 +371,7 @@ const _$AppGridThemeJsonSchema = {
     'rows': {'type': 'integer', 'default': 3},
     'iconSize': {'type': 'number', 'default': 68.0},
     'appCardFontSize': {'type': 'number', 'default': 18.0},
+    'appCardTextPadding': {r'$ref': r'#/$defs/EdgeInsets'},
     'appCardTextOutlineColour': {r'$ref': r'#/$defs/Color'},
     'appGridOutterPadding': {r'$ref': r'#/$defs/EdgeInsets'},
     'appCardIconPadding': {r'$ref': r'#/$defs/EdgeInsets'},
@@ -363,6 +386,7 @@ const _$AppGridThemeJsonSchema = {
     'appCardTextColour': {r'$ref': r'#/$defs/Color'},
   },
   r'$defs': {
+    'EdgeInsets': {'type': 'object', 'properties': {}},
     'Color': {
       'type': 'object',
       'properties': {
@@ -370,7 +394,6 @@ const _$AppGridThemeJsonSchema = {
       },
       'required': ['value'],
     },
-    'EdgeInsets': {'type': 'object', 'properties': {}},
     'Duration': {'type': 'object', 'properties': {}},
     'SelectorTheme': {
       'type': 'object',
