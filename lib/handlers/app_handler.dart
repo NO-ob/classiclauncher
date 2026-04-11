@@ -343,6 +343,7 @@ class AppHandler extends GetxController {
       final List<String> newPositions = [...jsonDecode(utf8.decode(bytes))];
 
       appPositions.value = newPositions;
+      await configHandler.saveConfig(config: jsonEncode(newPositions), configType: ConfigType.appPositions);
       Get.snackbar("App order imported ( Ո‿Ո)", "app order has been imported", backgroundColor: Colors.black54, colorText: Colors.white);
       getAppList();
     } catch (e, stackTrace) {
